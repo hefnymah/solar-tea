@@ -195,7 +195,7 @@ INVERTER_DB = [
 
 # --- Real Data Integration ---
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
+DATA_DIR = os.path.join(os.path.dirname(__file__), '..', 'data')
 
 def ensure_data_dir():
     if not os.path.exists(DATA_DIR):

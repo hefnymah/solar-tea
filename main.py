@@ -6,17 +6,16 @@ import numpy as np
 import pandas as pd
 import numpy as np
 
-from equipment_db import (
+from src.equipment_db import (
     MODULE_DB, INVERTER_DB, 
     check_module_inverter_compat, get_compatible_inverter,
     get_real_databases, search_equipment, adapt_sandia_module, adapt_cec_inverter
 )
-from roof_sizing import suggest_best_orientation
+from src.roof_sizing import suggest_best_orientation
 
-from pv_generation import simulate_pv_generation
-from battery_sizing import optimize_battery_size, optimize_battery_cost, simulate_battery
-from battery_pysam import simulate_pysam_battery
-from equipment_db import MODULE_DB, INVERTER_DB # Correction import
+from src.pv_generation import simulate_pv_generation
+from src.battery_sizing import optimize_battery_size, optimize_battery_cost, simulate_battery
+from src.battery_pysam import simulate_pysam_battery
 
 def main():
     print("=== Perplexity PV & Battery Sizing Tool ===\n")
