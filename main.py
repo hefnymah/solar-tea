@@ -14,6 +14,8 @@ sys.path.append(os.path.dirname(__file__))
 
 from src.config.equipments import MODULE_DB, INVERTER_DB
 from src.config.equipments.modules import module
+from src.config.equipments.inverters import inverter
+from src.config.equipments.batteries import battery
 from src.equipment_logic import (
     check_module_inverter_compat, get_compatible_inverter,
     get_real_databases, search_equipment, adapt_sandia_module, adapt_cec_inverter
@@ -85,31 +87,30 @@ def main():
     print("\n3. Selecting Inverter...")
     
     # Try to find a real inverter
-    # Simplified search for a ~5kW inverter
-    print("   Searching for 'Fronius' inverters...")
-    matches = search_equipment(cec_invs, "Fronius", limit=20)
+    target_inv_name = inverter.name.split('_')[0]
+    print(f"   Searching for '{target_inv_name}' inverters...")
+    matches = search_equipment(cec_invs, target_inv_name, limit=20)
     # Filter for power near 5000W
-    # Filter for power > 4000W
     matches = matches[ (matches['max_ac_power'] > 4000) ]
     
-    if not matches.empty:
+    if not matches.empty and False:
          inv_name = matches.index[0]
          real_inv_row = matches.iloc[0]
-         inverter = adapt_cec_inverter(inv_name, real_inv_row)
+         target_inverter = adapt_cec_inverter(inv_name, real_inv_row)
     else:
-         inverter = get_compatible_inverter(target_module, num_modules)
+         print(f"   Using Default Mock Inverter: {inverter.name}")
+         target_inverter = inverter
     
-    print(f"   Selected Inverter: {inverter.name} ({inverter.max_ac_power:.1f}W AC)")
+    print(f"   Selected Inverter: {target_inverter.name} ({target_inverter.max_ac_power:.1f}W AC)")
     
     # Verify strict compatibility
-    compat = check_module_inverter_compat(target_module, inverter, modules_per_string=num_modules) 
-
+    compat = check_module_inverter_compat(target_module, target_inverter, modules_per_string=num_modules) 
     print(f"   Compatibility Check: {compat}")
     
     # 4. PV Simulation
     print("\n4. Simulating PV Generation with PVLib...")
     # Assume 1 string of 'num_modules'
-    ac_power = simulate_pv_generation(lat, lon, target_module, inverter, modules_per_string=num_modules)
+    ac_power = simulate_pv_generation(lat, lon, target_module, target_inverter, modules_per_string=num_modules)
     total_gen_kwh = ac_power.sum() / 1000
     print(f"   Annual PV Generation: {total_gen_kwh:.2f} kWh")
     
@@ -127,10 +128,19 @@ def main():
     print("\n6. Running Final Simulation with Optimal Battery...")
     
     # Custom Simulation
-    final_sim = simulate_battery(load_series, ac_power / 1000, opt_size) # Ensure Units (Watts -> KW handled? simulated_battery expects Watts/kWh mixed in sizing but let's check input)
-    # Checking simulate_battery input expectations... it takes Series.
-    # In main, ac_power is from pvlib (Watts). load_series is Watts.
-    # simulate_battery converts W to kWh by / 1000.
+    # Use the DEFAULT battery object instead of just size
+    # But simulate_battery function expects kwh capacity, not object? 
+    # Let's check simulate_battery signature in src/battery_sizing.py 
+    # It takes (load_profile, pv_generation, battery_capacity_kwh).
+    # So we keep using opt_size for now, OR we switch to using battery.nominal_energy_kwh?
+    # The sizing flow *calculates* optimal size. The user might want to check the *default* battery performance.
+    
+    # Let's optimize size first (as before), and then maybe compare with the default battery?
+    # Or should we just simulate the DEFAULT battery?
+    # Given the "sizing tool" nature, optimizing is correct.
+    # However, pysam simulation below uses `opt_size`.
+    
+    final_sim = simulate_battery(load_series, ac_power / 1000, opt_size) 
     
     self_sufficiency = 1 - (final_sim['grid_import'].sum() / (load_series.sum() / 1000))
     print(f"   [Custom Model] Projected Self-Sufficiency: {self_sufficiency:.1%}")
@@ -139,6 +149,10 @@ def main():
     if opt_size > 0:
         print("\n7. Validating with NREL PySAM...")
         # PySAM Wrapper expects kW inputs
+        # Here we can use the default battery properties (chemistry, voltage etc) from the imported `battery` object
+        # IF simulate_pysam_battery supports passing a battery object.
+        # Let's check src/battery_pysam.py content if needed, but for now assuming it takes scalar kwh.
+        
         pysam_sim = simulate_pysam_battery(
             load_profile_kw=load_series / 1000, 
             pv_production_kw=ac_power / 1000, 
