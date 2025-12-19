@@ -2,6 +2,8 @@
 import pandas as pd
 import PySAM.BatteryStateful as BatteryStateful
 import PySAM.ResourceTools as tools
+from typing import Optional
+from .equipment_models import MockBattery
 
 def simulate_pysam_battery(
     load_profile_kw: pd.Series, 

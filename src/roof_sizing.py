@@ -1,7 +1,7 @@
 
 import math
 from typing import Tuple
-from .equipment_db import MockModule
+from .equipment_models import MockModule
 
 def check_roof_fit(
     roof_width: float, 

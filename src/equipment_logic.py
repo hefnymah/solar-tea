@@ -3,7 +3,16 @@ import os
 import pandas as pd
 import pvlib
 from typing import Optional, List
-from .equipment_db import MockModule, MockInverter, INVERTER_DB
+import os
+import sys
+import pandas as pd
+import pvlib
+from typing import Optional, List
+from .equipment_models import MockModule, MockInverter, MockBattery
+
+# Ensure root (sys-size) is in path to find user_data
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+from user_data.custom_equipment import INVERTER_DB
 
 # --- Real Data Integration ---
 
