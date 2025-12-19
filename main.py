@@ -6,8 +6,8 @@ import numpy as np
 import pandas as pd
 import numpy as np
 
-from src.equipment_db import (
-    MODULE_DB, INVERTER_DB, 
+from src.equipment_db import MODULE_DB, INVERTER_DB
+from src.equipment_logic import (
     check_module_inverter_compat, get_compatible_inverter,
     get_real_databases, search_equipment, adapt_sandia_module, adapt_cec_inverter
 )

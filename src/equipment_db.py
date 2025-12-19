@@ -2,9 +2,9 @@
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 
-import pandas as pd
-import pvlib
-import os
+
+from dataclasses import dataclass, field
+from typing import List, Optional, Tuple
 
 @dataclass
 class MockModule:
@@ -193,135 +193,87 @@ INVERTER_DB = [
 ]
 
 
-# --- Real Data Integration ---
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), '..', 'data')
 
-def ensure_data_dir():
-    if not os.path.exists(DATA_DIR):
-        os.makedirs(DATA_DIR)
-
-def get_real_databases():
-    """
-    Retrieves SandiaMod and CECInverter databases using pvlib.
-    Caches them locally in sys-size/data/ to save bandwidth.
-    """
-    ensure_data_dir()
+@dataclass
+class MockBattery:
+    name: str
+    nominal_energy_kwh: float  # Capacity
+    nominal_voltage_v: float
+    max_charge_power_kw: float
+    max_discharge_power_kw: float
     
-    mod_path = os.path.join(DATA_DIR, 'SandiaMod.csv')
-    inv_path = os.path.join(DATA_DIR, 'CECInverter.csv')
+    # Chemistry / PySAM Params
+    chem: int = 1 # 0=LeadAcid, 1=Li-ion
+    min_soc: float = 20.0
+    max_soc: float = 95.0
+    initial_soc: float = 95.0
     
-    # Modules
-    if os.path.exists(mod_path):
-        modules = pd.read_csv(mod_path, index_col=0)
-    else:
-        print("Downloading Sandia Module Database...")
-        modules = pvlib.pvsystem.retrieve_sam('SandiaMod')
-        modules = modules.T # Transpose: Rows=Modules, Cols=Params
-        modules.to_csv(mod_path)
-        
-    # Inverters
-    if os.path.exists(inv_path):
-        inverters = pd.read_csv(inv_path, index_col=0)
-    else:
-        print("Downloading CEC Inverter Database...")
-        inverters = pvlib.pvsystem.retrieve_sam('cecinverter')
-        inverters = inverters.T # Transpose: Rows=Inverters, Cols=Params
-        inverters.to_csv(inv_path)
-        
-    return modules, inverters
-
-def search_equipment(df: pd.DataFrame, query: str, limit: int = 5) -> pd.DataFrame:
-    """Case-insensitive search on index."""
-    matches = df[df.index.str.contains(query, case=False, na=False)]
-    return matches.head(limit)
-
-def adapt_sandia_module(name: str, row: pd.Series) -> MockModule:
-    """
-    Converts a Sandia Module row to MockModule format.
-    Estimates dimensions if not present (Sandia often lacks explicit W/H, usually has Area).
-    """
-    area = row.get('Area', 1.7) # Fallback to standard 1.7m2
-    # Estimate dims assuming 1.6 aspect ratio standard for older panels, or 1.0:1.7
-    # Width ~ sqrt(Area / 1.6), Height ~ Width * 1.6
-    # This is a Rough Estimation for layout purposes if data missing.
-    width = (area / 1.6) ** 0.5
-    height = width * 1.6
     
-    # Extract known keys for MockModule
-    mod = MockModule(
-        name=name,
-        power_watts=row.get('Impo', 0) * row.get('Vmpo', 0), # Pmp = Imp * Vmp
-        width_m=width,
-        height_m=height,
-        vmpp=row.get('Vmpo', 0),
-        impp=row.get('Impo', 0),
-        voc=row.get('Voc', row.get('Voco', 0)), # 'Voco' in Sandia, 'Voc' sometimes standard
-        isc=row.get('Isc', row.get('Isco', 0)), # 'Isco' in Sandia
+    # Cell Specs (Defaults for Li-ion)
+    v_nom_cell: float = 3.6
+    v_max_cell: float = 4.1
+    v_min_cell: float = 3.0
+    q_full_cell: float = 3.0
+    resistance: float = 0.01
+    
+    # Shepherd Model (Voltage Curve)
+    v_exp: Optional[float] = None
+    q_exp: Optional[float] = None
+    q_nom: Optional[float] = None
+    v_nom_curve: Optional[float] = None # Vnom for curve logic might differ slightly from v_nom_cell
+    c_rate: Optional[float] = None
+    
+    # Lead Acid Specifics (Optional)
+    q10: Optional[float] = None
+    q20: Optional[float] = None
+    qn: Optional[float] = None
+    tn: Optional[float] = None
+
+BATTERY_DB = [
+    MockBattery(
+        name="Tesla_Powerwall_2",
+        nominal_energy_kwh=13.5,
+        nominal_voltage_v=50, 
+        max_charge_power_kw=5.0,
+        max_discharge_power_kw=5.0,
+        min_soc=10.0,
+        max_soc=100.0,
+        # Standard Li-ion estimates
+        v_exp=4.05, q_exp=0.05, q_nom=3.0, v_nom_curve=3.6, c_rate=1.0
+    ),
+    MockBattery(
+        name="BYD_Battery-Box_Premium_HVS_10.2",
+        nominal_energy_kwh=10.2,
+        nominal_voltage_v=400,
+        max_charge_power_kw=10.2,
+        max_discharge_power_kw=10.2,
+        min_soc=5.0,
+        max_soc=100.0,
+         # LiFePO4 approx
+        v_nom_cell=3.2, v_max_cell=3.65, v_min_cell=2.5,
+        v_exp=3.5, q_exp=0.02, q_nom=2.8, v_nom_curve=3.2, c_rate=1.0
+    ),
+    MockBattery(
+        name="LG_Chem_RESU_10H",
+        nominal_energy_kwh=9.8,
+        nominal_voltage_v=400,
+        max_charge_power_kw=5.0,
+        max_discharge_power_kw=5.0,
+        min_soc=5.0,
+        max_soc=95.0,
+        chem=1
+    ),
+    MockBattery(
+        name="Generic_LeadAcid_10kWh",
+        nominal_energy_kwh=10.0,
+        nominal_voltage_v=48,
+        max_charge_power_kw=2.0,
+        max_discharge_power_kw=3.0,
+        min_soc=40.0, # Lead Acid shouldn't go too deep
+        max_soc=100.0,
+        chem=0, # Lead Acid
+        v_nom_cell=2.0, v_max_cell=2.4, v_min_cell=1.75,
+        q10=100, q20=110, qn=100, tn=20 # Examples
     )
-    
-    # Populate explicit Sandia params
-    for field_name in MockModule.__dataclass_fields__:
-        if field_name not in ['name', 'power_watts', 'width_m', 'height_m', 'vmpp', 'impp', 'voc', 'isc']:
-            if field_name in row:
-                setattr(mod, field_name, row[field_name])
-                
-    return mod
-
-def adapt_cec_inverter(name: str, row: pd.Series) -> MockInverter:
-
-    """
-    Converts a CEC Inverter row to MockInverter format.
-    """
-    inv = MockInverter(
-        name=name,
-        max_ac_power=row.get('Paco', 0), # AC Power Rating
-        mppt_low_v=row.get('Mppt_low', row.get('Vdcmin', 100)), 
-        mppt_high_v=row.get('Mppt_high', row.get('Vdcmax', 500)), 
-        max_input_voltage=row.get('Vdcmax', 600),
-        max_input_current=row.get('Idcmax', 15),
-    )
-    
-    # Populate explicit CEC params
-    for field_name in MockInverter.__dataclass_fields__:
-        if field_name not in ['name', 'max_ac_power', 'mppt_low_v', 'mppt_high_v', 'max_input_voltage', 'max_input_current']:
-             if field_name in row:
-                setattr(inv, field_name, row[field_name])
-                
-    return inv
-
-
-# --- End Real Data Integration ---
-
-def check_module_inverter_compat(module: MockModule, inverter: MockInverter, modules_per_string: int = 1) -> dict:
-    """
-    Checks electrical compatibility between a module string and an inverter.
-    """
-    string_voc_cold = module.voc * modules_per_string * 1.15 # Assuming 15% rise at cold temp
-    string_vmpp = module.vmpp * modules_per_string
-    string_imp = module.impp
-    
-    checks = {
-        "voc_limit": string_voc_cold <= inverter.max_input_voltage,
-        "mppt_range": inverter.mppt_low_v <= string_vmpp <= inverter.mppt_high_v,
-        "current_limit": string_imp <= inverter.max_input_current,
-        "dc_ac_ratio": (module.power_watts * modules_per_string) / inverter.max_ac_power <= 1.5 # Allow up to 1.5 DC/AC ratio
-    }
-    
-    return checks
-
-def get_compatible_inverter(module: MockModule, total_modules: int) -> Optional[MockInverter]:
-    """
-    Finds a suitable inverter for a given total number of modules.
-    Simplified logic: Assumes 1 or 2 strings max for string inverters.
-    """
-    total_power = module.power_watts * total_modules
-    
-    for inverter in INVERTER_DB:
-        # Simple size check first
-        if 0.8 <= total_power / inverter.max_ac_power <= 1.3:
-            # Check electricals for a single string configuration (simplified)
-             if check_module_inverter_compat(module, inverter, total_modules)["voc_limit"]:
-                 return inverter
-                 
-    return INVERTER_DB[1] # Default fallback for demo
+]
