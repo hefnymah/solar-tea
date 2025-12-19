@@ -38,12 +38,14 @@ Jinko400 = MockModule(
         "temperature_coefficient_power": -0.37,
         "nominal_operating_cell_temperature": 45,
         "max_system_voltage": 1500,
-        "max_series_fuse": 20
+        "max_series_fuse": 20,
+        "bifacial_factor": None  # Not bifacial
     },
     mechanical={
         "weight": 22.5,
         "frame_material": "aluminum",
         "front_glass": "3.2mm tempered glass",
+        "back_glass": None, # Standard backsheet
         "backsheet": "TPT (Tedlar-PET-Tedlar)",
         "junction_box": "IP67 rated"
     },
@@ -58,13 +60,15 @@ Jinko400 = MockModule(
         "iec": "IEC 61215, IEC 61730",
         "ul": "UL 1703",
         "ce": "CE marked",
-        "iso": "ISO 9001:2015, ISO 14001:2015"
+        "iso": "ISO 9001:2015, ISO 14001:2015",
+        "tuv": None
     },
     warranty={
         "product_warranty_years": 12,
         "performance_warranty_years": 25,
         "performance_guarantee_year_1": 98,
         "performance_guarantee_year_25": 84.8,
+        "performance_guarantee_year_30": None, # 25 year warranty
         "linear_degradation": True
     },
     economics={
@@ -105,12 +109,14 @@ Longi550 = MockModule(
         "temperature_coefficient_power": -0.37,
         "nominal_operating_cell_temperature": 45,
         "max_system_voltage": 1500,
-        "max_series_fuse": 25
+        "max_series_fuse": 25,
+        "bifacial_factor": None
     },
     mechanical={
         "weight": 28.5,
         "frame_material": "aluminum",
         "front_glass": "3.2mm tempered glass",
+        "back_glass": None,
         "backsheet": "TPT",
         "junction_box": "IP67 rated"
     },
@@ -121,13 +127,18 @@ Longi550 = MockModule(
         "humidity": "≤85%",
         "hail_resistance": "IEC 61215 certified"
     },
-    certifications=[
-        "IEC 61215", "IEC 61730", "CE", "TÜV"
-    ],
+    certifications={
+        "iec": "IEC 61215, IEC 61730",
+        "ce": "CE",
+        "tuv": "TÜV",
+        "ul": None,
+        "iso": None
+    },
     warranty={  # Estimated from notes
             "product_warranty_years": 12,
             "performance_warranty_years": 30,
             "performance_guarantee_year_1": 99.0,
+            "performance_guarantee_year_25": None, # Will be interpolated
             "performance_guarantee_year_30": 87.4,
             "linear_degradation": True
     },
@@ -177,6 +188,7 @@ Trina550 = MockModule(
         "frame_material": "aluminum",
         "front_glass": "3.2mm tempered glass",
         "back_glass": "3.2mm tempered glass",
+        "backsheet": None, # Glass-glass module
         "junction_box": "IP67 rated"
     },
     environmental={
@@ -186,14 +198,19 @@ Trina550 = MockModule(
             "humidity": "≤85%",
             "hail_resistance": "IEC 61215 certified"
         },
-        certifications=[
-            "IEC 61215", "IEC 61730", "CE", "TÜV"
-        ],
+    certifications={
+        "iec": "IEC 61215, IEC 61730",
+        "ce": "CE",
+        "tuv": "TÜV",
+        "ul": None,
+        "iso": None
+    },
         warranty={
             "product_warranty_years": 12,
             "performance_warranty_years": 30,
             "performance_guarantee_year_1": 99.0,
-            "performance_guarantee_year_30": 87.4,
+            "performance_guarantee_year_25": None, # Will be interpolated
+            "performance_guarantee_year_30": 77.4, # 87.4% at year 30
             "linear_degradation": True
         },
         economics={
