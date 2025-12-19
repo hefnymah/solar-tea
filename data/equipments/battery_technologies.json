@@ -1,0 +1,230 @@
+{
+  "battery_technologies": {
+    "Lithium-Ionen LFP": {
+      "display_name": "Lithium-Ionen LFP",
+      "category": "Lithium-Ion",
+      "description": "Lithium Iron Phosphate - Most common for residential storage",
+      "performance": {
+        "round_trip_efficiency_percent": 90.0,
+        "charge_efficiency_percent": 95.0,
+        "discharge_efficiency_percent": 95.0,
+        "depth_of_discharge_percent": 90.0,
+        "self_discharge_rate_percent_month": 3.0
+      },
+      "lifecycle": {
+        "lifetime_years": 15,
+        "calendar_life_years": 15,
+        "cycle_life": 6000,
+        "degradation_rate_percent_per_year": 1.333,
+        "total_degradation_percent": 20.0,
+        "degradation_calculation": "20% / speicherlebensdauer"
+      },
+      "environmental": {
+        "temperature_range": "-20 to 60°C"
+      },
+      "cost": {
+        "cost_per_kwh_chf": 900.0,
+        "cost_range": "800-1100 CHF/kWh",
+        "cost_source": "Swiss market estimates 2024-2025",
+        "cost_notes": "Includes battery, BMS, inverter integration, installation. Prices vary by manufacturer and system size."
+      },
+      "typical_applications": [
+        "Residential energy storage",
+        "Small commercial systems",
+        "Grid-connected systems"
+      ],
+      "notes": "- Most popular choice for residential storage\n- Excellent safety characteristics\n- Good cycle life\n- Lower energy density than NMC but safer\n"
+    },
+    "Lithium-Ionen NMC": {
+      "display_name": "Lithium-Ionen NMC",
+      "category": "Lithium-Ion",
+      "description": "Lithium Nickel Manganese Cobalt - Higher energy density",
+      "performance": {
+        "round_trip_efficiency_percent": 92.0,
+        "charge_efficiency_percent": 96.0,
+        "discharge_efficiency_percent": 96.0,
+        "depth_of_discharge_percent": 85.0,
+        "self_discharge_rate_percent_month": 3.0
+      },
+      "lifecycle": {
+        "lifetime_years": 12,
+        "calendar_life_years": 12,
+        "cycle_life": 5000,
+        "degradation_rate_percent_per_year": 1.667,
+        "total_degradation_percent": 20.0,
+        "degradation_calculation": "20% / speicherlebensdauer"
+      },
+      "environmental": {
+        "temperature_range": "-10 to 55°C"
+      },
+      "cost": {
+        "cost_per_kwh_chf": 1000.0,
+        "cost_range": "900-1200 CHF/kWh",
+        "cost_source": "Swiss market estimates 2024-2025",
+        "cost_notes": "Higher energy density commands premium pricing. Prices vary by manufacturer."
+      },
+      "typical_applications": [
+        "Commercial energy storage",
+        "High energy density requirements",
+        "Electric vehicle applications"
+      ],
+      "notes": "- Higher energy density than LFP\n- Good for space-constrained installations\n- Slightly shorter lifetime than LFP\n"
+    },
+    "Lithium-Ionen NCA": {
+      "display_name": "Lithium-Ionen NCA",
+      "category": "Lithium-Ion",
+      "description": "Lithium Nickel Cobalt Aluminum - Very high energy density",
+      "performance": {
+        "round_trip_efficiency_percent": 91.0,
+        "charge_efficiency_percent": 95.0,
+        "discharge_efficiency_percent": 96.0,
+        "depth_of_discharge_percent": 80.0,
+        "self_discharge_rate_percent_month": 3.5
+      },
+      "lifecycle": {
+        "lifetime_years": 10,
+        "calendar_life_years": 10,
+        "cycle_life": 4000,
+        "degradation_rate_percent_per_year": 2.0,
+        "total_degradation_percent": 20.0,
+        "degradation_calculation": "20% / speicherlebensdauer"
+      },
+      "environmental": {
+        "temperature_range": "-10 to 50°C"
+      },
+      "cost": {
+        "cost_per_kwh_chf": 1100.0,
+        "cost_range": "1000-1300 CHF/kWh",
+        "cost_source": "Swiss market estimates 2024-2025",
+        "cost_notes": "Premium technology with highest energy density. Prices vary by manufacturer."
+      },
+      "typical_applications": [
+        "High-performance applications",
+        "Space-critical installations",
+        "Electric vehicle applications"
+      ],
+      "notes": "- Highest energy density\n- Shorter lifetime than LFP\n- More expensive\n"
+    },
+    "Lithium-Ionen LTO": {
+      "display_name": "Lithium-Ionen LTO",
+      "category": "Lithium-Ion",
+      "description": "Lithium Titanate - Ultra-long cycle life",
+      "performance": {
+        "round_trip_efficiency_percent": 88.0,
+        "charge_efficiency_percent": 94.0,
+        "discharge_efficiency_percent": 94.0,
+        "depth_of_discharge_percent": 95.0,
+        "self_discharge_rate_percent_month": 2.0
+      },
+      "lifecycle": {
+        "lifetime_years": 20,
+        "calendar_life_years": 20,
+        "cycle_life": 15000,
+        "degradation_rate_percent_per_year": 1.0,
+        "total_degradation_percent": 20.0,
+        "degradation_calculation": "20% / speicherlebensdauer"
+      },
+      "environmental": {
+        "temperature_range": "-30 to 60°C"
+      },
+      "cost": {
+        "cost_per_kwh_chf": 1300.0,
+        "cost_range": "1200-1600 CHF/kWh",
+        "cost_source": "Swiss market estimates 2024-2025",
+        "cost_notes": "Premium technology with ultra-long cycle life. Higher cost but excellent durability."
+      },
+      "typical_applications": [
+        "Long-term storage applications",
+        "High cycle count requirements",
+        "Extreme temperature environments"
+      ],
+      "notes": "- Longest cycle life\n- Excellent temperature tolerance\n- Lower energy density\n- More expensive\n"
+    },
+    "Natrium-Ionen": {
+      "display_name": "Natrium-Ionen",
+      "category": "Alternative",
+      "description": "Sodium-Ion - Emerging technology",
+      "performance": {
+        "round_trip_efficiency_percent": 85.0,
+        "charge_efficiency_percent": 92.0,
+        "discharge_efficiency_percent": 93.0,
+        "depth_of_discharge_percent": 90.0,
+        "self_discharge_rate_percent_month": 4.0
+      },
+      "lifecycle": {
+        "lifetime_years": 12,
+        "calendar_life_years": 12,
+        "cycle_life": 5000,
+        "degradation_rate_percent_per_year": 1.667,
+        "total_degradation_percent": 20.0,
+        "degradation_calculation": "20% / speicherlebensdauer"
+      },
+      "environmental": {
+        "temperature_range": "-20 to 60°C"
+      },
+      "cost": {
+        "cost_per_kwh_chf": 700.0,
+        "cost_range": "600-900 CHF/kWh",
+        "cost_source": "Swiss market estimates 2024-2025",
+        "cost_notes": "Emerging technology with lower cost potential. Limited market availability in Switzerland. Prices may vary significantly."
+      },
+      "typical_applications": [
+        "Large-scale storage",
+        "Cost-sensitive applications",
+        "Grid-scale systems"
+      ],
+      "notes": "- Lower cost than lithium-ion\n- Abundant materials\n- Emerging technology\n- Lower energy density\n"
+    },
+    "Blei-Säure AGM": {
+      "display_name": "Blei-Säure AGM",
+      "category": "Lead-Acid",
+      "description": "Lead-Acid AGM - Traditional technology",
+      "performance": {
+        "round_trip_efficiency_percent": 80.0,
+        "charge_efficiency_percent": 85.0,
+        "discharge_efficiency_percent": 94.0,
+        "depth_of_discharge_percent": 50.0,
+        "self_discharge_rate_percent_month": 5.0
+      },
+      "lifecycle": {
+        "lifetime_years": 8,
+        "calendar_life_years": 8,
+        "cycle_life": 1500,
+        "degradation_rate_percent_per_year": 2.5,
+        "total_degradation_percent": 20.0,
+        "degradation_calculation": "20% / speicherlebensdauer"
+      },
+      "environmental": {
+        "temperature_range": "-10 to 40°C"
+      },
+      "cost": {
+        "cost_per_kwh_chf": 500.0,
+        "cost_range": "400-600 CHF/kWh",
+        "cost_source": "Swiss market estimates 2024-2025",
+        "cost_notes": "Traditional technology with lower upfront cost but shorter lifetime and lower efficiency. Less common in modern Swiss installations."
+      },
+      "typical_applications": [
+        "Budget-conscious installations",
+        "Backup power systems",
+        "Off-grid systems"
+      ],
+      "notes": "- Lowest cost option\n- Lower efficiency and cycle life\n- Requires more maintenance\n- Lower depth of discharge\n- Heavier and larger than lithium-ion\n"
+    }
+  },
+  "defaults": {
+    "performance": {
+      "round_trip_efficiency_percent": 90.0,
+      "depth_of_discharge_percent": 90.0,
+      "self_consumption_increase_percent": 20.0,
+      "peak_shaving_percent": 30.0
+    },
+    "lifecycle": {
+      "lifetime_years": 15,
+      "degradation_rate_percent_per_year": 1.333
+    },
+    "cost": {
+      "cost_per_kwh_chf": 700.0
+    }
+  },
+  "notes": "This file contains technical specifications for battery storage technologies.\n\nWhen a user selects a battery technology:\n1. The corresponding parameters are automatically loaded\n2. Degradation is calculated as: total_degradation / lifetime_years\n3. Users can override individual parameters if needed\n\nTo add a new battery technology:\n1. Add a new entry under battery_technologies\n2. Include all required parameters\n3. Follow the same structure as existing entries\n\nParameter Sources:\n- Manufacturer specifications\n- Industry standards\n- Typical values from real-world installations\n- May vary by manufacturer and specific product\n\nCOST DATA (Swiss Market 2024-2025):\n⚠️  IMPORTANT: Cost data is based on market estimates and industry reports.\n\nCost per kWh includes:\n- Battery cells/modules\n- Battery Management System (BMS)\n- Inverter integration\n- Installation (typical residential)\n- Basic permits\n\nCost factors that may vary:\n- System size (larger systems may have lower cost per kWh)\n- Manufacturer/brand\n- Installation complexity\n- Additional features (smart management, backup power, etc.)\n- Regional variations within Switzerland\n\nRECOMMENDATION:\n- Verify costs with local Swiss suppliers/manufacturers\n- Get quotes for specific projects\n- Consider system size and installation requirements\n- Factor in subsidies (Pronovo, cantonal bonuses)\n\nCost data should be updated regularly as battery prices evolve.\n"
+}

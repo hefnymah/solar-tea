@@ -12,7 +12,7 @@ import os
 # Ensure root is in path for imports
 sys.path.append(os.path.dirname(__file__))
 
-from user_data.custom_equipment import MODULE_DB, INVERTER_DB
+from customization.pv_equipments import MODULE_DB, INVERTER_DB
 from src.equipment_logic import (
     check_module_inverter_compat, get_compatible_inverter,
     get_real_databases, search_equipment, adapt_sandia_module, adapt_cec_inverter

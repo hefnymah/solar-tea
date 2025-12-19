@@ -10,9 +10,9 @@ import pvlib
 from typing import Optional, List
 from .equipment_models import MockModule, MockInverter, MockBattery
 
-# Ensure root (sys-size) is in path to find user_data
+# Ensure root (solar-tea) is in path to find customization
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
-from user_data.custom_equipment import INVERTER_DB
+from customization.pv_equipments import INVERTER_DB
 
 # --- Real Data Integration ---
 
@@ -25,7 +25,7 @@ def ensure_data_dir():
 def get_real_databases():
     """
     Retrieves SandiaMod and CECInverter databases using pvlib.
-    Caches them locally in sys-size/data/ to save bandwidth.
+    Caches them locally in solar-tea/data/ to save bandwidth.
     """
     ensure_data_dir()
     

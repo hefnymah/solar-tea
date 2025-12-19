@@ -1,4 +1,5 @@
-# Solar Tea - PV & Battery Sizing Tool
+
+# Solar-Tea: PV & Battery Sizing Tool
 
 A comprehensive Python-based tool for sizing Solar PV systems and Batteries, specifically tailored for Swiss residential scenarios. It integrates real equipment data (Sandia/CEC), `pvlib` for production simulation, and NREL's `PySAM` for high-fidelity battery dispatch analysis.
 
@@ -17,16 +18,19 @@ A comprehensive Python-based tool for sizing Solar PV systems and Batteries, spe
 ## Project Structure
 
 ```
-sys-size/
-├── main.py              # Entry point script
-├── data/                # Cached CSV databases (Sandia/CEC)
+solar-tea/
+├── main.py                # Entry point script
+├── data/                  # Cached CSV databases (Sandia/CEC)
+├── customization/
+│   └── pv_equipments.py   # User customizable equipment lists
 ├── src/
-│   ├── equipment_db.py  # Data loading, search, and compatibility checks
-│   ├── pv_generation.py # PVLib simulation logic
-│   ├── battery_sizing.py# Basic battery simulation & cost optimization
-│   ├── battery_pysam.py # NREL PySAM wrapper
-│   └── roof_sizing.py   # Roof layout logic
-└── requirements.txt     # Dependencies
+│   ├── equipment_models.py# Dataclass schemas
+│   ├── equipment_logic.py # Data loading, search, and compatibility checks
+│   ├── pv_generation.py   # PVLib simulation logic
+│   ├── battery_sizing.py  # Basic battery simulation & cost optimization
+│   ├── battery_pysam.py   # NREL PySAM wrapper
+│   └── roof_sizing.py     # Roof layout logic
+└── requirements.txt       # Dependencies
 ```
 
 ## Installation
@@ -34,7 +38,7 @@ sys-size/
 1. **Clone the repository**:
    ```bash
    git clone git@github.com:hefnymah/solar-tea.git
-   cd solar-tea/sys-size
+   cd solar-tea
    ```
 
 2. **Create a virtual environment** (recommended):
