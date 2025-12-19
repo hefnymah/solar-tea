@@ -18,7 +18,7 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from src.config.equipments.batteries import pysam as battery
-from src.battery_pysam import simulate_pysam_battery
+from src.battery import PySAMBatterySimulator
 from src.synthetic_profiles import generate_scenario
 
 def main():
@@ -41,22 +41,15 @@ def main():
     print(f"   Annual Load: {total_load_kwh:.0f} kWh")
     print(f"   Annual PV:   {total_pv_kwh:.0f} kWh")
     
-    # 2. Simulate
-    print(f"\n2. Simulating with Battery: {battery.nominal_energy_kwh} kWh, {battery.performance.chemistry}...")
+    # 2. Simulate using OOP interface
+    chemistry = battery.performance.get('chemistry', 'Unknown') if isinstance(battery.performance, dict) else getattr(battery.performance, 'chemistry', 'Unknown')
+    print(f"\n2. Simulating with Battery: {battery.nominal_energy_kwh} kWh, {chemistry}...")
     
-    # Use PySAM wrapper
-    # Note: simulate_pysam_battery currently takes scalar capacity.
-    # We pass the default battery's nominal energy.
-    # Future enhancement: Pass the full 'battery' object to use its specific voltage/chem curves.
-    results = simulate_pysam_battery(
-        load_profile_kw=load_kw,
-        pv_production_kw=pv_kw,
-        battery=battery
-        # Scaling is optional:
-        # system_kwh=battery.nominal_energy_kwh, # Default
-        # system_kw=battery.max_discharge_power_kw, # Default
-        # system_voltage=battery.nominal_voltage_v # Default
-    )
+    # Create simulator instance
+    simulator = PySAMBatterySimulator(battery)
+    
+    # Run simulation
+    results = simulator.simulate(load_kw, pv_kw)
     
     # Restore index for analysis
     results.index = load_kw.index

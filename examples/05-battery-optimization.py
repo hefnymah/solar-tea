@@ -7,10 +7,9 @@ required to eliminate grid import (achieve 100% Self-Sufficiency).
 
 Algorithm:
 1. Generate synthetic Load and PV data.
-2. Sweep battery capacities (e.g., 0 to 100 kWh).
-3. Simulate each size using PySAM.
-4. Plot the "Self-Sufficiency vs Capacity" curve.
-5. Identify the "Knee" of the curve and the limits (99%, 100%).
+2. Use the PySAMBatterySimulator.optimize_size() method.
+3. Plot the "Self-Sufficiency vs Capacity" curve.
+4. Visualize optimal battery behavior.
 
 Note: 100% Self-Sufficiency (Autarky) often requires massive seasonal storage 
 in climates with winter deficits. This script demonstrates that diminishing return.
@@ -26,7 +25,7 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from src.config.equipments.batteries import pysam as battery
-from src.battery_pysam import simulate_pysam_battery
+from src.battery import PySAMBatterySimulator
 from src.synthetic_profiles import generate_scenario
 
 def main():
@@ -52,7 +51,10 @@ def main():
         print("\n   [Warning] PV generation is less than Load. 100% Self-Sufficiency is impossible.")
     
     # 2. Optimization Sweep
-    print("\n2. Running Optimization Sweep (0 - 50 kWh)...")
+    print("\n2. Running Optimization Sweep (0 - 100 kWh)...")
+    
+    # Create simulator instance
+    simulator = PySAMBatterySimulator(battery)
     
     capacities = [0, 5, 10, 15, 20, 30, 40, 50, 75, 100]
     results_data = []
@@ -60,30 +62,15 @@ def main():
     for cap in capacities:
         print(f"   Simulating {cap:3.0f} kWh...", end="")
         
-        # Simulate
-        # Note: If cap=0, PySAM might error or behave oddly. Let's handle 0 separately or assume small.
-        # Actually PySAM BatteryStateful allows small size? Let's use 0.1 as min if 0 fails, but let's try 0.
-        
         if cap == 0:
             # No battery
-            # SS = 1 - (Import / Load)
-            # Import = Load - PV (where Load > PV)
             net = load_kw - pv_kw
             grid_import = net[net > 0].sum()
             ss = 1.0 - (grid_import / annual_load)
         else:
-            sim_res = simulate_pysam_battery(
-                load_profile_kw=load_kw,
-                pv_production_kw=pv_kw,
-                battery=battery,
-                system_kwh=float(cap),
-                # Power also needs scaling? Let's keep 5kW power or scale it?
-                # Usually power scales with energy (C-rate). 
-                # Our pysam config has C-rate=1.0. So Power = Capacity * 1.0
-                system_kw=float(cap) * battery.c_rate if battery.c_rate else float(cap)
-            )
+            sim_res = simulator.simulate(load_kw, pv_kw, system_kwh=float(cap))
             grid_import = sim_res['grid_import'].sum()
-            ss = 1.0 - (grid_import / annual_load)
+            ss = simulator.calculate_self_sufficiency(sim_res)
             
         print(f" -> Self-Sufficiency: {ss:.1%}")
         results_data.append({'Capacity_kWh': cap, 'SS_Percent': ss * 100.0, 'Import_kWh': grid_import})
@@ -148,13 +135,7 @@ def main():
             print(f"\n5. Visualizing Optimal Battery ({opt_cap:.0f} kWh)...")
             
             # Re-simulate for the specific optimal capacity to get time-series
-            opt_results = simulate_pysam_battery(
-                load_profile_kw=load_kw,
-                pv_production_kw=pv_kw,
-                battery=battery,
-                system_kwh=float(opt_cap),
-                system_kw=float(opt_cap) * battery.c_rate if battery.c_rate else float(opt_cap)
-            )
+            opt_results = simulator.simulate(load_kw, pv_kw, system_kwh=float(opt_cap))
             opt_results.index = load_kw.index # Restore datetime index
             
             # --- Print Daily Breakdown for the week ---

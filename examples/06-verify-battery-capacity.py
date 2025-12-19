@@ -17,7 +17,7 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from src.config.equipments.batteries import pysam as battery
-from src.battery_pysam import simulate_pysam_battery
+from src.battery import PySAMBatterySimulator
 from src.synthetic_profiles import generate_scenario
 
 # --- CONFIGURATION ---
@@ -39,16 +39,11 @@ def main():
     annual_load = load_kw.sum()
     print(f"   Annual Load: {annual_load:.0f} kWh")
     
-    # 2. Run Simulation
+    # 2. Run Simulation using OOP interface
     print(f"\n2. Simulating with {TARGET_CAPACITY_KWH} kWh Battery...")
-    results = simulate_pysam_battery(
-        load_profile_kw=load_kw,
-        pv_production_kw=pv_kw,
-        battery=battery,
-        system_kwh=TARGET_CAPACITY_KWH,
-        # Scale power with capacity (maintaining C-rate=1.0)
-        system_kw=TARGET_CAPACITY_KWH * (battery.c_rate if battery.c_rate else 1.0)
-    )
+    
+    simulator = PySAMBatterySimulator(battery)
+    results = simulator.simulate(load_kw, pv_kw, system_kwh=TARGET_CAPACITY_KWH)
     results.index = load_kw.index
     
     # 3. Analyze Results
