@@ -18,27 +18,55 @@ class Equipment:
     # All non-standard electrical params go here (e.g., gamma_pdc, C0, A0)
     model_params: Dict = field(default_factory=dict)
     
+    def __post_init__(self):
+        # Convert dictionaries to SimpleNamespace for dot notation access
+        # e.g. module.performance.efficiency instead of module.performance['efficiency']
+        from types import SimpleNamespace
+        
+        def dict_to_ns(d):
+            if isinstance(d, dict):
+                return SimpleNamespace(**d)
+            return d
+
+        if self.dimensions and isinstance(self.dimensions, dict): self.dimensions = dict_to_ns(self.dimensions)
+        if self.economics and isinstance(self.economics, dict): self.economics = dict_to_ns(self.economics)
+        if self.warranty and isinstance(self.warranty, dict): self.warranty = dict_to_ns(self.warranty)
+        if self.certifications and isinstance(self.certifications, dict): self.certifications = dict_to_ns(self.certifications)
+        if self.performance and isinstance(self.performance, dict): self.performance = dict_to_ns(self.performance)
+
+    @property
+    def degradation_yearly(self) -> float:
+        """Alias for annual_degradation_rate as requested."""
+        return self.annual_degradation_rate
+
     @property
     def annual_degradation_rate(self) -> float:
         """
         Returns the annual linear degradation rate as a percentage (e.g., 0.55).
         Calculated from warranty data.
         """
-        if not self.warranty:
+        # Handle case where warranty was converted to SimpleNamespace
+        w = self.warranty
+        if not w:
             return 0.55 # Conservative default
             
-        w = self.warranty
-        p1 = w.get('performance_guarantee_year_1', 98.0)
+        # Helper to get attr or Item
+        def get(obj, key, default):
+            if isinstance(obj, dict): return obj.get(key, default)
+            return getattr(obj, key, default)
+            
+        # Check if SimpleNamespace or dict
+        p1 = get(w, 'performance_guarantee_year_1', 98.0)
         
         # Find endpoint
-        if 'performance_guarantee_year_30' in w:
-            p_end = w['performance_guarantee_year_30']
+        if get(w, 'performance_guarantee_year_30', None):
+            p_end = get(w, 'performance_guarantee_year_30', 84.8)
             y_end = 30
-        elif 'performance_guarantee_year_25' in w:
-            p_end = w['performance_guarantee_year_25']
+        elif get(w, 'performance_guarantee_year_25', None):
+            p_end = get(w, 'performance_guarantee_year_25', 84.8)
             y_end = 25
         else:
-            p_end = 84.8 # Standard fallback
+            p_end = 84.8 
             y_end = 25
             
         total_deg_period = p1 - p_end
@@ -50,11 +78,16 @@ class Equipment:
         Calculates the degradation percentage at a specific year based on warranty data.
         Returns percentage lost (e.g., 15.2 for 15.2% degradation).
         """
+        # Access annual_degradation_rate which handles the generic access
         if not self.warranty:
             return 0.0
             
-        w = self.warranty
-        p1 = w.get('performance_guarantee_year_1', 98.0)
+        # We need p1 again
+        def get(obj, key, default):
+            if isinstance(obj, dict): return obj.get(key, default)
+            return getattr(obj, key, default)
+            
+        p1 = get(self.warranty, 'performance_guarantee_year_1', 98.0)
         
         if year <= 1:
             return float(100.0 - p1)
@@ -81,6 +114,7 @@ class MockModule(Equipment):
     Notes: Optional[str] = None
     
     def __post_init__(self):
+        super().__post_init__()
         # Support kwargs-like behavior for backward compatibility if needed, 
         # or just strictly enforce model_params usage.
         pass
