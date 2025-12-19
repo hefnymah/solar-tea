@@ -12,7 +12,7 @@ import os
 # Ensure root is in path for imports
 sys.path.append(os.path.dirname(__file__))
 
-from src.config.equipments import MODULE_DB, INVERTER_DB
+from src.config.equipments import MODULE_DB, INVERTER_DB, DEFAULT_MODULE
 from src.equipment_logic import (
     check_module_inverter_compat, get_compatible_inverter,
     get_real_databases, search_equipment, adapt_sandia_module, adapt_cec_inverter
@@ -59,17 +59,19 @@ def main():
     print("\n2. Checking Roof Capacity...")
     
     # Try to find a real module
-    print("   Searching for 'Jinko' modules...")
-    matches = search_equipment(sandia_mods, "Jinko", limit=3)
-    if not matches.empty:
+    target_name = DEFAULT_MODULE.name.split('_')[0] # e.g. "Trina"
+    print(f"   Searching for '{target_name}' modules...")
+    matches = search_equipment(sandia_mods, target_name, limit=3)
+    
+    if not matches.empty and False: # Disable Real DB usage to enforce Mock usage for validation
         # Pick the first one
         mod_name = matches.index[0]
         real_mod_row = matches.iloc[0]
         print(f"   found: {mod_name}")
         target_module = adapt_sandia_module(mod_name, real_mod_row)
     else:
-        print("   No match found, utilizing Mock DB.")
-        target_module = MODULE_DB[1] # Failback
+        print("   Using Default Mock Module.")
+        target_module = DEFAULT_MODULE
     
     orientation, num_modules = suggest_best_orientation(roof_w, roof_h, target_module)
     print(f"   Selected Module: {target_module.name} ({target_module.power_watts:.1f}W)")

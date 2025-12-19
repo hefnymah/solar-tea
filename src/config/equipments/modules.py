@@ -210,7 +210,7 @@ Trina550 = MockModule(
             "performance_warranty_years": 30,
             "performance_guarantee_year_1": 99.0,
             "performance_guarantee_year_25": None, # Will be interpolated
-            "performance_guarantee_year_30": 77.4, # 87.4% at year 30
+            "performance_guarantee_year_30": 87.4, # 87.4% at year 30
             "linear_degradation": True
         },
         economics={
@@ -226,3 +226,5 @@ MODULE_DB = [
     Longi550,
     Trina550,
 ]
+
+DEFAULT_MODULE = Trina550
