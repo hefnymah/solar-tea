@@ -8,11 +8,11 @@ import sys
 import pandas as pd
 import pvlib
 from typing import Optional, List
-from .equipment_models import MockModule, MockInverter, MockBattery
+from src.config.equipment_models import MockModule, MockInverter, MockBattery
 
 # Ensure root (solar-tea) is in path to find customization
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
-from customization.pv_equipments import INVERTER_DB
+# sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+from src.config.equipments import INVERTER_DB
 
 # --- Real Data Integration ---
 
@@ -24,33 +24,26 @@ def ensure_data_dir():
 
 def get_real_databases():
     """
-    Retrieves SandiaMod and CECInverter databases using pvlib.
-    Caches them locally in solar-tea/data/ to save bandwidth.
+    Returns curated databases as DataFrames for compatibility with search logic.
+    Source: src/config/equipments
     """
-    ensure_data_dir()
+    from src.config.equipments import MODULE_DB, INVERTER_DB
     
-    mod_path = os.path.join(DATA_DIR, 'SandiaMod.csv')
-    inv_path = os.path.join(DATA_DIR, 'CECInverter.csv')
+    # Convert list of dataclasses to DataFrame
+    # Transpose is NOT needed here because our list is row-based, 
+    # but the original logic expected transposed frames (Rows=Modules).
+    # Original logic: modules = modules.T where original SAM was Cols=Modules.
+    # Here we build rows directly.
     
     # Modules
-    if os.path.exists(mod_path):
-        modules = pd.read_csv(mod_path, index_col=0)
-    else:
-        print("Downloading Sandia Module Database...")
-        modules = pvlib.pvsystem.retrieve_sam('SandiaMod')
-        modules = modules.T # Transpose: Rows=Modules, Cols=Params
-        modules.to_csv(mod_path)
-        
+    mod_data = {m.name: m.__dict__ for m in MODULE_DB}
+    modules_df = pd.DataFrame.from_dict(mod_data, orient='index')
+    
     # Inverters
-    if os.path.exists(inv_path):
-        inverters = pd.read_csv(inv_path, index_col=0)
-    else:
-        print("Downloading CEC Inverter Database...")
-        inverters = pvlib.pvsystem.retrieve_sam('cecinverter')
-        inverters = inverters.T # Transpose: Rows=Inverters, Cols=Params
-        inverters.to_csv(inv_path)
+    inv_data = {inv.name: inv.__dict__ for inv in INVERTER_DB}
+    inverters_df = pd.DataFrame.from_dict(inv_data, orient='index')
         
-    return modules, inverters
+    return modules_df, inverters_df
 
 def search_equipment(df: pd.DataFrame, query: str, limit: int = 5) -> pd.DataFrame:
     """Case-insensitive search on index."""
@@ -62,6 +55,13 @@ def adapt_sandia_module(name: str, row: pd.Series) -> MockModule:
     Converts a Sandia Module row to MockModule format.
     Estimates dimensions if not present (Sandia often lacks explicit W/H, usually has Area).
     """
+    # Check if already a MockModule row (from curated DB)
+    if 'power_watts' in row:
+        # Reconstruct MockModule from the row data
+        # Filter row keys to match MockModule fields
+        valid_fields = {k: v for k, v in row.items() if k in MockModule.__dataclass_fields__}
+        return MockModule(**valid_fields)
+        
     area = row.get('Area', 1.7) # Fallback to standard 1.7m2
     # Estimate dims assuming 1.6 aspect ratio standard for older panels, or 1.0:1.7
     # Width ~ sqrt(Area / 1.6), Height ~ Width * 1.6
@@ -81,12 +81,16 @@ def adapt_sandia_module(name: str, row: pd.Series) -> MockModule:
         isc=row.get('Isc', row.get('Isco', 0)), # 'Isco' in Sandia
     )
     
-    # Populate explicit Sandia params
-    for field_name in MockModule.__dataclass_fields__:
-        if field_name not in ['name', 'power_watts', 'width_m', 'height_m', 'vmpp', 'impp', 'voc', 'isc']:
-            if field_name in row:
-                setattr(mod, field_name, row[field_name])
-                
+    # Populate explicit Sandia params into model_params
+    params = {}
+    for key, val in row.items():
+        # Heuristic: If it's not a standard field, put it in model_params
+        # Or specifically target Sandia coeffs: A0..A4, B0..B5, C0..C7
+        if key not in ['name', 'Area', 'Material', 'Notes']: 
+             params[key] = val
+             
+    mod.model_params = params
+                 
     return mod
 
 def adapt_cec_inverter(name: str, row: pd.Series) -> MockInverter:
@@ -94,6 +98,11 @@ def adapt_cec_inverter(name: str, row: pd.Series) -> MockInverter:
     """
     Converts a CEC Inverter row to MockInverter format.
     """
+    # Check if already a MockInverter row (from curated DB)
+    if 'max_ac_power' in row:
+        valid_fields = {k: v for k, v in row.items() if k in MockInverter.__dataclass_fields__}
+        return MockInverter(**valid_fields)
+
     inv = MockInverter(
         name=name,
         max_ac_power=row.get('Paco', 0), # AC Power Rating
@@ -103,12 +112,16 @@ def adapt_cec_inverter(name: str, row: pd.Series) -> MockInverter:
         max_input_current=row.get('Idcmax', 15),
     )
     
-    # Populate explicit CEC params
-    for field_name in MockInverter.__dataclass_fields__:
-        if field_name not in ['name', 'max_ac_power', 'mppt_low_v', 'mppt_high_v', 'max_input_voltage', 'max_input_current']:
-             if field_name in row:
-                setattr(inv, field_name, row[field_name])
-                
+    # Populate CEC params into model_params
+    params = {}
+    # Explicit list of CEC params to look for
+    cec_fields = ['Vac', 'Pso', 'Paco', 'Pdco', 'Vdco', 'C0', 'C1', 'C2', 'C3', 'Pnt']
+    for field in cec_fields:
+        if field in row:
+            params[field] = row[field]
+            
+    inv.model_params = params
+                 
     return inv
 
 

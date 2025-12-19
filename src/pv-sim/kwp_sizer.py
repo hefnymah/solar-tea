@@ -19,6 +19,8 @@ from pvlib.pvsystem import PVSystem
 from pvlib.modelchain import ModelChain
 from pvlib.temperature import TEMPERATURE_MODEL_PARAMETERS
 
+from config import pv_sizing as settings
+
 @dataclass
 class EnergyProfile:
     """
@@ -60,7 +62,7 @@ class EnergyProfile:
 
 
 @dataclass
-class SizingResult:
+class kWpSizingResult:
     """
     Immutable result object for PV sizing calculations.
     
@@ -85,7 +87,7 @@ class SizingResult:
     
     def __str__(self) -> str:
         return (
-            f"PV Sizing Result:\n"
+            f"kWp Sizing Result:\n"
             f"  Recommended Size: {self.recommended_kwp:.1f} kWp\n"
             f"  Specific Yield: {self.specific_yield:.0f} kWh/kWp/year\n"
             f"  Est. Generation: {self.estimated_annual_generation:.0f} kWh/year\n"
@@ -96,7 +98,7 @@ class SizingResult:
         )
 
 
-class EnergySizer:
+class kWpSizer:
     """
     Main class for PV system energy calculations and sizing.
     
@@ -113,10 +115,10 @@ class EnergySizer:
     Example:
         Basic usage with explicit Peak Sun Hours:
         
-            >>> from energy import EnergySizer, EnergyProfile
+            >>> from kwp_sizer import kWpSizer, EnergyProfile
             >>> 
             >>> # Initialize sizer for Zurich with known PSH
-            >>> sizer = EnergySizer(
+            >>> sizer = kWpSizer(
             ...     latitude=47.3769,
             ...     longitude=8.5417,
             ...     peak_sun_hours=3.8
@@ -136,7 +138,7 @@ class EnergySizer:
         
         Auto-estimate PSH from latitude (no explicit PSH):
         
-            >>> sizer_auto = EnergySizer(latitude=40.4168, longitude=-3.7038)
+            >>> sizer_auto = kWpSizer(latitude=40.4168, longitude=-3.7038)
             >>> print(sizer_auto.peak_sun_hours)  # Estimated from latitude
         
         Calculate required kWp for 100% offset:
@@ -151,10 +153,10 @@ class EnergySizer:
             >>> print(f"10 kWp system generates ~{gen:.0f} kWh/year")
     """
     
-    # Class-level constants
-    DEFAULT_LOSS_FACTOR = 1.15
-    DEFAULT_SELF_SUFFICIENCY = 0.80
-    DEFAULT_PSH = 3.8  # Central Europe fallback
+    # Class-level constants (DEPRECATED: Use settings.py)
+    DEFAULT_LOSS_FACTOR = settings.DEFAULT_LOSS_FACTOR
+    DEFAULT_SELF_SUFFICIENCY = settings.DEFAULT_SELF_SUFFICIENCY
+    DEFAULT_PSH = settings.DEFAULT_PEAK_SUN_HOURS
     
     def __init__(
         self,
@@ -165,7 +167,7 @@ class EnergySizer:
         default_self_sufficiency: float = DEFAULT_SELF_SUFFICIENCY
     ):
         """
-        Initialize the EnergySizer.
+        Initialize the kWpSizer.
         
         Args:
             latitude: Site latitude in decimal degrees.
@@ -254,7 +256,7 @@ class EnergySizer:
         self,
         profile: EnergyProfile,
         self_sufficiency: Optional[float] = None
-    ) -> SizingResult:
+    ) -> kWpSizingResult:
         """
         Calculate the recommended PV system size for the given energy profile.
         
@@ -264,7 +266,7 @@ class EnergySizer:
                               Uses default if not specified.
         
         Returns:
-            SizingResult object with calculated values.
+            kWpSizingResult object with calculated values.
         """
         target_ss = self_sufficiency if self_sufficiency is not None else self._default_self_sufficiency
         
@@ -278,7 +280,7 @@ class EnergySizer:
         # Estimated annual generation
         annual_gen = kwp * specific_yield
         
-        return SizingResult(
+        return kWpSizingResult(
             recommended_kwp=round(kwp, 1),
             specific_yield=round(specific_yield, 0),
             estimated_annual_generation=round(annual_gen, 0),
@@ -293,7 +295,7 @@ class EnergySizer:
         self,
         daily_kwh: float,
         self_sufficiency: Optional[float] = None
-    ) -> SizingResult:
+    ) -> kWpSizingResult:
         """
         Convenience method to size a system directly from daily consumption.
         
@@ -302,7 +304,7 @@ class EnergySizer:
             self_sufficiency: Target self-sufficiency ratio.
         
         Returns:
-            SizingResult object.
+            kWpSizingResult object.
         """
         profile = EnergyProfile(daily_kwh=daily_kwh)
         return self.size_system(profile, self_sufficiency)
@@ -311,7 +313,7 @@ class EnergySizer:
         self,
         annual_kwh: float,
         self_sufficiency: Optional[float] = None
-    ) -> SizingResult:
+    ) -> kWpSizingResult:
         """
         Convenience method to size a system from annual consumption.
         
@@ -320,7 +322,7 @@ class EnergySizer:
             self_sufficiency: Target self-sufficiency ratio.
         
         Returns:
-            SizingResult object.
+            kWpSizingResult object.
         """
         profile = EnergyProfile.from_annual(annual_kwh)
         return self.size_system(profile, self_sufficiency)
@@ -365,10 +367,10 @@ class EnergySizer:
         self,
         profile: EnergyProfile,
         self_sufficiency: Optional[float] = None,
-        tilt: float = 30.0,
-        azimuth: float = 180.0,
-        performance_ratio: float = 0.85
-    ) -> SizingResult:
+        tilt: float = settings.DEFAULT_TILT,
+        azimuth: float = settings.DEFAULT_AZIMUTH,
+        performance_ratio: float = settings.DEFAULT_PERFORMANCE_RATIO
+    ) -> kWpSizingResult:
         """
         Advanced sizing using real irradiance data from PVGIS.
         
@@ -384,13 +386,13 @@ class EnergySizer:
             performance_ratio: System performance ratio (default: 0.85 = 85%).
         
         Returns:
-            SizingResult object with accurately calculated values.
+            kWpSizingResult object with accurately calculated values.
         
         Raises:
             RuntimeError: If PVGIS data cannot be fetched.
         
         Example:
-            >>> sizer = EnergySizer(latitude=47.3769, longitude=8.5417)
+            >>> sizer = kWpSizer(latitude=47.3769, longitude=8.5417)
             >>> profile = EnergyProfile(daily_kwh=30)
             >>> result = sizer.size_with_pvgis(profile)
             >>> print(result.specific_yield)  # Accurate yield from simulation
@@ -443,7 +445,7 @@ class EnergySizer:
         
         annual_gen = kwp * specific_yield
         
-        return SizingResult(
+        return kWpSizingResult(
             recommended_kwp=round(kwp, 1),
             specific_yield=round(specific_yield, 0),
             estimated_annual_generation=round(annual_gen, 0),
@@ -459,7 +461,7 @@ class EnergySizer:
         daily_kwh: float,
         self_sufficiency: Optional[float] = None,
         **kwargs
-    ) -> SizingResult:
+    ) -> kWpSizingResult:
         """
         Convenience method: Size using PVGIS from daily consumption.
         
@@ -469,14 +471,14 @@ class EnergySizer:
             **kwargs: Additional arguments passed to size_with_pvgis().
         
         Returns:
-            SizingResult object.
+            kWpSizingResult object.
         """
         profile = EnergyProfile(daily_kwh=daily_kwh)
         return self.size_with_pvgis(profile, self_sufficiency, **kwargs)
     
     def __repr__(self) -> str:
         return (
-            f"EnergySizer(lat={self._latitude:.4f}, lon={self._longitude:.4f}, "
+            f"kWpSizer(lat={self._latitude:.4f}, lon={self._longitude:.4f}, "
             f"psh={self._psh:.2f}, loss_factor={self._loss_factor})"
         )
 
@@ -505,7 +507,7 @@ def size_pv_kwp(
     Returns:
         Recommended kWp (rounded to 1 decimal).
     """
-    sizer = EnergySizer(
+    sizer = kWpSizer(
         latitude=latitude,
         longitude=longitude,
         peak_sun_hours=peak_sun_hours,
@@ -518,18 +520,18 @@ def size_pv_kwp(
 # --- Main Block for Testing ---
 
 if __name__ == "__main__":
-    print("=== EnergySizer Demo ===\n")
+    print("=== kWpSizer Demo ===\n")
     
     # Example 1: Zurich coordinates with explicit PSH
     print("--- Zurich (Explicit PSH) ---")
-    sizer = EnergySizer(latitude=47.3769, longitude=8.5417, peak_sun_hours=3.8)
+    sizer = kWpSizer(latitude=47.3769, longitude=8.5417, peak_sun_hours=3.8)
     result = sizer.size_from_daily(30)
     print(result)
     print()
     
     # Example 2: Madrid coordinates (PSH estimated from latitude)
     print("--- Madrid (Estimated PSH) ---")
-    sizer_madrid = EnergySizer(latitude=40.4168, longitude=-3.7038)
+    sizer_madrid = kWpSizer(latitude=40.4168, longitude=-3.7038)
     result2 = sizer_madrid.size_from_daily(30)
     print(result2)
     print()

@@ -6,4 +6,4 @@ Data lists moved to user_data/custom_equipment.py
 Logic moved to src/equipment_logic.py
 """
 # Re-export for backward compatibility if needed, else empty.
-from .equipment_models import MockModule, MockInverter, MockBattery
+from src.config.equipment_models import MockModule, MockInverter, MockBattery

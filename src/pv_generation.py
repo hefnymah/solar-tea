@@ -7,7 +7,7 @@ from pvlib.location import Location
 from pvlib.temperature import TEMPERATURE_MODEL_PARAMETERS
 from dataclasses import asdict
 
-from .equipment_models import MockModule, MockInverter
+from src.config.equipment_models import MockModule, MockInverter
 
 def get_tmy_data(latitude, longitude):
     """
@@ -80,13 +80,23 @@ def simulate_pv_generation(
     
     # Helper to extract potential PVLib params
     def get_real_params(obj):
-        # excludes standard Mock interface fields if they conflict or aren't needed by pvlib models
-        # But actually, assuming we are using Sandia/CEC models, we just need the keys matching the model requirements.
-        # Those keys are exactly what we added to the dataclass.
-        return {k: v for k, v in asdict(obj).items() if v is not None and k not in [
+        # Base dict from dataclass fields
+        base = {k: v for k, v in asdict(obj).items() if k not in ['model_params'] and v is not None}
+        
+        # Merge implicit model params if they exist
+        if hasattr(obj, 'model_params') and obj.model_params:
+             base.update(obj.model_params)
+             
+        # Filter out meta-fields not needed by pvlib models
+        # (pvlib models usually ignore extra kwargs, but let's be clean)
+        excluded = [
             'name', 'power_watts', 'width_m', 'height_m', 'vmpp', 'impp', 'voc', 'isc',
-            'max_ac_power', 'mppt_low_v', 'mppt_high_v', 'max_input_voltage', 'max_input_current'
-        ]}
+            'max_ac_power', 'mppt_low_v', 'mppt_high_v', 'max_input_voltage', 'max_input_current',
+            'dimensions', 'performance', 'mechanical', 'environmental', 
+            'certifications', 'warranty', 'economics', 'features', 'interfaces', 'Notes'
+        ]
+        
+        return {k: v for k, v in base.items() if k not in excluded}
 
     mod_params = get_real_params(module)
     inv_params = get_real_params(inverter)
@@ -110,7 +120,14 @@ def simulate_pv_generation(
         }
 
     # Prepare Inverter config
-    if not inv_params:
+    # Check if we have enough params for a real model (e.g., CEC or Sandia)
+    # CEC requires at least Paco, Pdco, Vdco, Pso, C0, C1, C2, C3, Pnt
+    # Sandia requires C0, C1, C2 etc.
+    # If we lack these, force fallback to simple PVWatts-style efficiency
+    
+    has_electrical_params = any(k in inv_params for k in ['Paco', 'Pdco', 'C0', 'C1'])
+    
+    if not has_electrical_params:
         inv_params = {'pdc0': system_capacity, 'pdc': inverter.max_ac_power} # Fallback
 
     pv_system = PVSystem(

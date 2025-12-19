@@ -12,7 +12,7 @@ import os
 # Ensure root is in path for imports
 sys.path.append(os.path.dirname(__file__))
 
-from customization.pv_equipments import MODULE_DB, INVERTER_DB
+from src.config.equipments import MODULE_DB, INVERTER_DB
 from src.equipment_logic import (
     check_module_inverter_compat, get_compatible_inverter,
     get_real_databases, search_equipment, adapt_sandia_module, adapt_cec_inverter
@@ -59,8 +59,8 @@ def main():
     print("\n2. Checking Roof Capacity...")
     
     # Try to find a real module
-    print("   Searching for 'Canadian Solar' modules...")
-    matches = search_equipment(sandia_mods, "Canadian_Solar", limit=3)
+    print("   Searching for 'Jinko' modules...")
+    matches = search_equipment(sandia_mods, "Jinko", limit=3)
     if not matches.empty:
         # Pick the first one
         mod_name = matches.index[0]
@@ -83,10 +83,11 @@ def main():
     
     # Try to find a real inverter
     # Simplified search for a ~5kW inverter
-    print("   Searching for 'Fronius' 5kW inverters...")
+    print("   Searching for 'Fronius' inverters...")
     matches = search_equipment(cec_invs, "Fronius", limit=20)
     # Filter for power near 5000W
-    matches = matches[ (matches['Paco'] > 4500) & (matches['Paco'] < 5500) ]
+    # Filter for power > 4000W
+    matches = matches[ (matches['max_ac_power'] > 4000) ]
     
     if not matches.empty:
          inv_name = matches.index[0]

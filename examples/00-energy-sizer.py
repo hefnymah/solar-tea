@@ -13,14 +13,15 @@ import sys
 import os
 
 # Add src to path for imports
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src', 'pv-sim'))
 
-from pv_sizer import EnergySizer, EnergyProfile, SizingResult, size_pv_kwp
+from kwp_sizer import kWpSizer, EnergyProfile, kWpSizingResult, size_pv_kwp
 
 
 def main():
     print("=" * 60)
-    print("EnergySizer Usage Examples")
+    print("kWpSizer Usage Examples")
     print("=" * 60)
     
     # -------------------------------------------------------------------------
@@ -29,7 +30,7 @@ def main():
     print("\n--- Example 1: Basic Usage (PSH Estimated from Latitude) ---")
     
     # Initialize sizer for Zurich - PSH will be auto-estimated from latitude
-    sizer = EnergySizer(
+    sizer = kWpSizer(
         latitude=47.3769,
         longitude=8.5417
         # peak_sun_hours not provided - will be estimated automatically
@@ -74,7 +75,7 @@ def main():
     print("\n--- Example 3: Auto-Estimate PSH from Latitude ---")
     
     # Don't provide PSH - let it be estimated from latitude
-    sizer_madrid = EnergySizer(latitude=40.4168, longitude=-3.7038)
+    sizer_madrid = kWpSizer(latitude=40.4168, longitude=-3.7038)
     
     print(f"Madrid: lat={sizer_madrid.latitude}")
     print(f"Estimated PSH: {sizer_madrid.peak_sun_hours} h/day")
