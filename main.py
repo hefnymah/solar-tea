@@ -26,6 +26,8 @@ from src.pv_generation import simulate_pv_generation
 from src.battery_sizing import optimize_battery_size, optimize_battery_cost, simulate_battery
 from src.battery_pysam import simulate_pysam_battery
 
+from src.synthetic_profiles import generate_load_profile
+
 def main():
     print("=== Perplexity PV & Battery Sizing Tool ===\n")
     
@@ -39,18 +41,26 @@ def main():
     # Load: Simple dummy profile (avg 10kWh/day -> ~400W constant baseline with peaks)
     print("1. Generating Load Profile...")
     times = pd.date_range(start='2024-01-01', end='2024-12-31 23:00', freq='h', tz='UTC')
-    # Create a synthetic load profile: Morning peak, Evening peak, low base
-    hour_of_day = times.hour
-    base_load = 300 # Watts
-    morning_peak = 1000 * np.exp(-0.5 * ((hour_of_day - 8) / 2)**2)
-    evening_peak = 1500 * np.exp(-0.5 * ((hour_of_day - 19) / 2)**2)
-    load_watts = base_load + morning_peak + evening_peak
     
-    # Add some random noise
-    load_watts += np.random.normal(0, 50, len(times))
-    load_watts = np.maximum(load_watts, 0) # No negative load
+    # Use centralized generator
+    load_watts = generate_load_profile(times, daily_avg_kwh=10.0) * 1000 # Convert back to Watts for compatibility if needed? 
+    # Wait, main.py uses 'load_watts' (numpy array) then creates 'load_series'.
+    # generate_load_profile returns Series in kW. 
+    # main.py lines 44-51 create 'load_watts' (Watts).
+    # line 53: load_series = pd.Series(load_watts, index=times)
+    # line 54: daily_load_kwh = ... / 1000
     
-    load_series = pd.Series(load_watts, index=times)
+    # We should return kW Series and adapt main.py usage.
+    # main.py uses 'load_series' later (line 120, 124).
+    # It assumes 'load_series' is in Watts? 
+    # Let's check:
+    # Line 120: optimize_battery_size(load_series, ac_power... )
+    # optimize_battery_size typically expects Watts if ac_power is Watts.
+    # main.py line 113: ac_power is Watts (pvlib output).
+    # So 'load_series' must be Watts.
+    
+    load_series_kw = generate_load_profile(times, daily_avg_kwh=10.0)
+    load_series = load_series_kw * 1000 # Convert kW -> W
     daily_load_kwh = load_series.resample('D').sum().mean() / 1000
     print(f"   Avg Daily Load: {daily_load_kwh:.2f} kWh")
     

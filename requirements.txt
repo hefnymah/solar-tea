@@ -3,3 +3,5 @@ numpy
 scipy
 pvlib
 nrel-pysam
+matplotlib
+
