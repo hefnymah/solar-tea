@@ -131,3 +131,6 @@ BATTERY_DB = [
         }
     )
 ]
+
+DEFAULT_BATTERY = Generic_LeadAcid_10kWh
+battery = DEFAULT_BATTERY

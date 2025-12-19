@@ -168,3 +168,6 @@ INVERTER_DB = [
         }
     ),
 ]
+
+DEFAULT_INVERTER = SMA_SunnyBoy_5.0
+inverter = DEFAULT_INVERTER

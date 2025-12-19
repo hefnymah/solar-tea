@@ -5,13 +5,14 @@ import sys
 # Ensure project root is in path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-from src.config.equipments.modules import Jinko400, Longi550, Trina550
+#from src.config.equipments.modules import Jinko400, Longi550, Trina550
+from src.config.equipments.modules import module
 
 def main():
     print("=== Module Access & Degradation Example ===\n")
     
     # 1. Direct Import Usage
-    module = Trina550
+    #module = module
     print(f"Selected Module: {module.name}")
     
     # 2. Dot Notation Access (Performance)
@@ -67,10 +68,10 @@ def main():
     
     print("\n------------------------------")
     
-    module2 = Jinko400
-    print(f"Module: {module2.name}")
-    print(f"Efficiency: {module2.performance.efficiency}%")
-    print(f"Annual Degradation: {module2.degradation_yearly}%")
+    # module2 = Jinko400
+    # print(f"Module: {module2.name}")
+    # print(f"Efficiency: {module2.performance.efficiency}%")
+    # print(f"Annual Degradation: {module2.degradation_yearly}%")
 
 if __name__ == "__main__":
     main()

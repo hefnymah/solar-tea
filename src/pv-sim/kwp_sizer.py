@@ -21,6 +21,10 @@ from pvlib.temperature import TEMPERATURE_MODEL_PARAMETERS
 
 from config import pv_sizing as settings
 
+from config.equipments.modules import module
+from config.equipments.inverters import inverter
+from config.equipments.batteries import battery
+
 @dataclass
 class EnergyProfile:
     """
@@ -481,62 +485,3 @@ class kWpSizer:
             f"kWpSizer(lat={self._latitude:.4f}, lon={self._longitude:.4f}, "
             f"psh={self._psh:.2f}, loss_factor={self._loss_factor})"
         )
-
-
-# --- Standalone Helper Function ---
-
-def size_pv_kwp(
-    daily_kwh: float,
-    latitude: float,
-    longitude: float,
-    peak_sun_hours: Optional[float] = None,
-    self_sufficiency: float = 0.8,
-    loss_factor: float = 1.15
-) -> float:
-    """
-    Simple kWp sizing from consumption + coordinates.
-    
-    Args:
-        daily_kwh: Household consumption (kWh/day).
-        latitude: Site latitude.
-        longitude: Site longitude.
-        peak_sun_hours: Optional PSH override. If None, estimated from latitude.
-        self_sufficiency: Fraction covered by PV (0.8 = 80%).
-        loss_factor: 1.15 for inverter/soiling/degradation losses.
-    
-    Returns:
-        Recommended kWp (rounded to 1 decimal).
-    """
-    sizer = kWpSizer(
-        latitude=latitude,
-        longitude=longitude,
-        peak_sun_hours=peak_sun_hours,
-        loss_factor=loss_factor
-    )
-    result = sizer.size_from_daily(daily_kwh, self_sufficiency)
-    return result.recommended_kwp
-
-
-# --- Main Block for Testing ---
-
-if __name__ == "__main__":
-    print("=== kWpSizer Demo ===\n")
-    
-    # Example 1: Zurich coordinates with explicit PSH
-    print("--- Zurich (Explicit PSH) ---")
-    sizer = kWpSizer(latitude=47.3769, longitude=8.5417, peak_sun_hours=3.8)
-    result = sizer.size_from_daily(30)
-    print(result)
-    print()
-    
-    # Example 2: Madrid coordinates (PSH estimated from latitude)
-    print("--- Madrid (Estimated PSH) ---")
-    sizer_madrid = kWpSizer(latitude=40.4168, longitude=-3.7038)
-    result2 = sizer_madrid.size_from_daily(30)
-    print(result2)
-    print()
-    
-    # Example 3: Using the helper function
-    print("--- Helper Function ---")
-    print(f"size_pv_kwp(30, 47.38, 8.54, psh=3.8): {size_pv_kwp(30, 47.38, 8.54, peak_sun_hours=3.8)} kWp")
-    print(f"size_pv_kwp(15, 47.38, 8.54, psh=3.8, ss=0.9): {size_pv_kwp(15, 47.38, 8.54, peak_sun_hours=3.8, self_sufficiency=0.9)} kWp")
