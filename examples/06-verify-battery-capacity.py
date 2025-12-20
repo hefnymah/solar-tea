@@ -125,7 +125,12 @@ def main():
         ax4.grid(True, alpha=0.3)
         
         plt.tight_layout()
-        out_file = 'examples/06-verify-battery-capacity.png'
+        
+        # Save to examples/outputs/
+        output_dir = os.path.join(os.path.dirname(__file__), 'outputs')
+        os.makedirs(output_dir, exist_ok=True)
+        out_file = os.path.join(output_dir, '06-verify-battery-capacity.png')
+        
         plt.savefig(out_file)
         print(f"   Plot saved to: {out_file}")
         

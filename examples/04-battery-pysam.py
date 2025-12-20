@@ -132,7 +132,7 @@ def main():
         ax1.plot(week_data.index, week_data['pv'], label='PV Gen', color='orange', alpha=0.8)
         ax1.fill_between(week_data.index, week_data['load'], color='gray', alpha=0.1)
         ax1.set_ylabel('Power (kW)')
-        ax1.set_title(f'Power Balance ({start_date} to {end_date})')
+        ax1.set_title(f'System Behavior (Week 24) - {battery.nominal_energy_kwh} kWh Battery')
         ax1.legend(loc='upper right')
         ax1.grid(True, alpha=0.3)
         
@@ -172,7 +172,12 @@ def main():
         ax4.grid(True, alpha=0.3)
         
         plt.tight_layout()
-        output_file = 'examples/04-battery-pysam.png'
+        
+        # Save to examples/outputs/
+        output_dir = os.path.join(os.path.dirname(__file__), 'outputs')
+        os.makedirs(output_dir, exist_ok=True)
+        output_file = os.path.join(output_dir, '04-battery-pysam.png')
+        
         plt.savefig(output_file)
         print(f"   Plot saved to: {output_file}")
         # plt.show() # Uncomment to show interactive window

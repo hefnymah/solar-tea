@@ -4,4 +4,5 @@ __pycache__/
 .DS_Store
 
 
-*.png
+# Ignore outputs from examples
+examples/outputs/*

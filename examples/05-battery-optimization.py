@@ -124,7 +124,12 @@ def main():
         ax2.tick_params(axis='y', labelcolor='r')
         
         plt.tight_layout()
-        output_file = 'examples/05-battery-optimization.png'
+        
+        # Save to examples/outputs/
+        output_dir = os.path.join(os.path.dirname(__file__), 'outputs')
+        os.makedirs(output_dir, exist_ok=True)
+        output_file = os.path.join(output_dir, '05-battery-optimization.png')
+        
         plt.savefig(output_file)
         print(f"\n4. Optimization Plot saved to: {output_file}")
 
@@ -138,89 +143,95 @@ def main():
             opt_results = simulator.simulate(load_kw, pv_kw, system_kwh=float(opt_cap))
             opt_results.index = load_kw.index # Restore datetime index
             
-            # --- Print Daily Breakdown for the week ---
-            start_date = '2024-06-01'
-            end_date = '2024-06-07'
-            week_data = opt_results.loc[start_date:end_date]
-            
-            print(f"\n   [Daily Breakdown for {start_date} to {end_date}]")
-            
-            # Calculate daily aggregates for the week
-            daily_week = week_data.resample('D').agg({
-                'load': 'sum',
-                'pv': 'sum',
-                'grid_import': 'sum',
-                'grid_export': 'sum',
-                # Split battery power into charge and discharge
-                'battery_power': [
-                    ('Discharge (kWh)', lambda x: x[x > 0].sum()),
-                    ('Charge (kWh)', lambda x: abs(x[x < 0].sum()))
-                ]
-            })
-            
-            # Flatten columns
-            daily_week.columns = ['Load', 'PV', 'Grid Imp', 'Grid Exp', 'Bat Disch', 'Bat Chg']
-            
-            # Print Table Header
-            header = f"   {'Date':<12} | {'Load':<8} | {'PV':<8} | {'GridImp':<8} | {'GridExp':<8} | {'BatDisch':<9} | {'BatChg':<8}"
-            print("   " + "-" * len(header))
-            print(header)
-            print("   " + "-" * len(header))
-            
-            for date, row in daily_week.iterrows():
-                d_str = date.strftime('%Y-%m-%d')
-                print(f"   {d_str:<12} | {row['Load']:<8.1f} | {row['PV']:<8.1f} | {row['Grid Imp']:<8.1f} | {row['Grid Exp']:<8.1f} | {row['Bat Disch']:<9.1f} | {row['Bat Chg']:<8.1f}")
-            print("   " + "-" * len(header) + "\n")
+            # --- Helper Function for Plotting ---
+            def plot_time_series(data, title_suffix, filename_suffix):
+                # Calculate daily aggregates for table
+                daily = data.resample('D').agg({
+                    'load': 'sum',
+                    'pv': 'sum',
+                    'grid_import': 'sum',
+                    'grid_export': 'sum',
+                    'battery_power': [
+                        ('Discharge', lambda x: x[x > 0].sum()),
+                        ('Charge', lambda x: abs(x[x < 0].sum()))
+                    ]
+                })
+                daily.columns = ['Load', 'PV', 'Grid Imp', 'Grid Exp', 'Bat Disch', 'Bat Chg']
+                
+                print(f"\n   [Daily Breakdown for {data.index[0].date()} to {data.index[-1].date()}]")
+                header = f"   {'Date':<12} | {'Load':<8} | {'PV':<8} | {'GridImp':<8} | {'GridExp':<8} | {'BatDisch':<9} | {'BatChg':<8}"
+                print("   " + "-" * len(header))
+                print(header)
+                print("   " + "-" * len(header))
+                for date, row in daily.iterrows():
+                    d_str = date.strftime('%Y-%m-%d')
+                    print(f"   {d_str:<12} | {row['Load']:<8.1f} | {row['PV']:<8.1f} | {row['Grid Imp']:<8.1f} | {row['Grid Exp']:<8.1f} | {row['Bat Disch']:<9.1f} | {row['Bat Chg']:<8.1f}")
+                print("   " + "-" * len(header) + "\n")
 
+                # Plotting
+                fig, axes = plt.subplots(4, 1, figsize=(12, 12), sharex=True)
+                
+                # Plot 1: Power Balance
+                ax1 = axes[0]
+                ax1.plot(data.index, data['load'], label='Load', color='black', linewidth=1.5)
+                ax1.plot(data.index, data['pv'], label='PV Gen', color='orange', alpha=0.8)
+                ax1.fill_between(data.index, data['load'], color='gray', alpha=0.1)
+                ax1.set_ylabel('Power (kW)')
+                ax1.set_title(f'Optimal System Behavior ({opt_cap:.0f} kWh) - {title_suffix}')
+                ax1.legend(loc='upper right')
+                ax1.grid(True, alpha=0.3)
+                
+                # Plot 2: Battery Power
+                ax2 = axes[1]
+                ax2.plot(data.index, data['battery_power'], label='Battery Flow', color='blue')
+                ax2.fill_between(data.index, data['battery_power'], 0, where=(data['battery_power']>0), color='green', alpha=0.3, label='Discharging')
+                ax2.fill_between(data.index, data['battery_power'], 0, where=(data['battery_power']<0), color='red', alpha=0.3, label='Charging')
+                ax2.set_ylabel('Battery (kW)')
+                ax2.legend(loc='upper right')
+                ax2.grid(True, alpha=0.3)
 
-            # Plotting Time Series
-            fig2, axes = plt.subplots(4, 1, figsize=(12, 12), sharex=True)
-            
-            # Plot 1: Power Balance
-            ax1 = axes[0]
-            ax1.plot(week_data.index, week_data['load'], label='Load', color='black', linewidth=1.5)
-            ax1.plot(week_data.index, week_data['pv'], label='PV Gen', color='orange', alpha=0.8)
-            ax1.fill_between(week_data.index, week_data['load'], color='gray', alpha=0.1)
-            ax1.set_ylabel('Power (kW)')
-            ax1.set_title(f'Optimal System Behavior ({opt_cap:.0f} kWh) - {start_date} to {end_date}')
-            ax1.legend(loc='upper right')
-            ax1.grid(True, alpha=0.3)
-            
-            # Plot 2: Battery Power
-            ax2 = axes[1]
-            ax2.plot(week_data.index, week_data['battery_power'], label='Battery Flow', color='blue')
-            ax2.fill_between(week_data.index, week_data['battery_power'], 0, where=(week_data['battery_power']>0), color='green', alpha=0.3, label='Discharging')
-            ax2.fill_between(week_data.index, week_data['battery_power'], 0, where=(week_data['battery_power']<0), color='red', alpha=0.3, label='Charging')
-            ax2.set_ylabel('Battery (kW)')
-            ax2.legend(loc='upper right')
-            ax2.grid(True, alpha=0.3)
+                # Plot 3: Grid Power
+                ax3 = axes[2]
+                ax3.plot(data.index, data['grid_power'], label='Net Grid', color='gray')
+                ax3.fill_between(data.index, data['grid_power'], 0, where=(data['grid_power']>0), color='orange', alpha=0.3, label='Import')
+                ax3.fill_between(data.index, data['grid_power'], 0, where=(data['grid_power']<0), color='cyan', alpha=0.3, label='Export')
+                ax3.set_ylabel('Grid (kW)')
+                ax3.legend(loc='upper right')
+                ax3.grid(True, alpha=0.3)
+                
+                # Plot 4: State of Charge
+                ax4 = axes[3]
+                ax4.plot(data.index, data['soc'], label='SOC', color='purple', linewidth=2)
+                ax4.axhline(battery.min_soc, linestyle='--', color='red', label='Min SOC')
+                ax4.axhline(battery.max_soc, linestyle='--', color='green', label='Max SOC')
+                ax4.set_ylabel('SOC (%)')
+                ax4.set_xlabel('Date')
+                ax4.legend(loc='upper right')
+                ax4.grid(True, alpha=0.3)
+                
+                plt.tight_layout()
+                
+                output_dir = os.path.join(os.path.dirname(__file__), 'outputs')
+                os.makedirs(output_dir, exist_ok=True)
+                output_path = os.path.join(output_dir, f'05-battery-optimization-{filename_suffix}.png')
+                plt.savefig(output_path)
+                print(f"   Plot saved to: {output_path}")
 
-            # Plot 3: Grid Power (Import/Export)
-            ax3 = axes[2]
-            ax3.plot(week_data.index, week_data['grid_power'], label='Net Grid', color='gray')
-            ax3.fill_between(week_data.index, week_data['grid_power'], 0, where=(week_data['grid_power']>0), color='orange', alpha=0.3, label='Import')
-            ax3.fill_between(week_data.index, week_data['grid_power'], 0, where=(week_data['grid_power']<0), color='cyan', alpha=0.3, label='Export')
-            ax3.set_ylabel('Grid (kW)')
-            ax3.legend(loc='upper right')
-            ax3.grid(True, alpha=0.3)
-            
-            # Plot 4: State of Charge
-            ax4 = axes[3]
-            ax4.plot(week_data.index, week_data['soc'], label='SOC', color='purple', linewidth=2)
-            ax4.axhline(battery.min_soc, linestyle='--', color='red', label='Min SOC')
-            ax4.axhline(battery.max_soc, linestyle='--', color='green', label='Max SOC')
-            ax4.set_ylabel('SOC (%)')
-            ax4.set_xlabel('Date')
-            ax4.legend(loc='upper right')
-            ax4.grid(True, alpha=0.3)
-            
-            plt.tight_layout()
-            output_file_ts = 'examples/05-battery-optimization-week.png'
-            plt.savefig(output_file_ts)
-            print(f"   Time-Series Plot saved to: {output_file_ts}")
+            # 1. Plot Representative Week (Summer)
+            print("   --- Summer Week Analysis ---")
+            plot_time_series(opt_results.loc['2024-06-01':'2024-06-07'], 'Summer Week', 'week')
+
+            # 2. Plot Typical Winter Day (Jan 15)
+            print("   --- Winter Day Analysis ---")
+            # Select 24 hours of Jan 15 (if single day requested)
+            winter_data = opt_results.loc['2024-01-15':'2024-01-15']
+            if not winter_data.empty:
+                plot_time_series(winter_data, 'Winter Day (Jan 15)', 'winter-day')
+            else:
+                print("   [Warning] Winter date not found in data.")
+
         else:
              print("\n   [Info] 100% SS target not found in range. Skipping time-series plot.")
-
         
     except ImportError:
         print("\n   [Warning] matplotlib not found. Skipping plot.")
