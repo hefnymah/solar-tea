@@ -10,7 +10,7 @@ import os
 # Ensure root is in path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-from src.consumption.analyzer import ConsumptionAnalyzer
+from eclipse.consumption.analyzer import ConsumptionAnalyzer
 
 
 #%%
@@ -20,7 +20,15 @@ os.makedirs(output_dir, exist_ok=True)
 
 # Initialize analyzer and load data
 analyzer = ConsumptionAnalyzer()
+analyzer.load_data(data_file)
 
+#%%
+analyzer.plot_date_range(
+    start_date='2024-07-15',
+    end_date='2024-07-15',
+    output_path=os.path.join(output_dir, '01_single_day.png'),
+    title='Single Day Consumption - jly 15, 2024'
+)
 #%%
 
 def main():

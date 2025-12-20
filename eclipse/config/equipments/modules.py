@@ -1,5 +1,5 @@
 
-from src.config.equipment_models import MockModule
+from eclipse.config.equipment_models import MockModule
 
 # Mock Database (User Customizable)
 # Enriched with full specs from manufacturer datasheets (via JSON extraction)

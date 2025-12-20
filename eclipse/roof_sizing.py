@@ -1,7 +1,7 @@
 
 import math
 from typing import Tuple
-from src.config.equipment_models import MockModule
+from eclipse.config.equipment_models import MockModule
 
 def check_roof_fit(
     roof_width: float, 

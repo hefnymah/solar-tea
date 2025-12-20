@@ -19,11 +19,11 @@ from pvlib.pvsystem import PVSystem
 from pvlib.modelchain import ModelChain
 from pvlib.temperature import TEMPERATURE_MODEL_PARAMETERS
 
-from config import pv_sizing as settings
+from eclipse.config import pv_sizing as settings
 
-from config.equipments.modules import module
-from config.equipments.inverters import inverter
-from config.equipments.batteries import battery
+from eclipse.config.equipments.modules import module
+from eclipse.config.equipments.inverters import inverter
+from eclipse.config.equipments.batteries import battery
 
 @dataclass
 class EnergyProfile:
@@ -485,3 +485,36 @@ class kWpSizer:
             f"kWpSizer(lat={self._latitude:.4f}, lon={self._longitude:.4f}, "
             f"psh={self._psh:.2f}, loss_factor={self._loss_factor})"
         )
+
+
+# --- Module-Level Helper Functions ---
+
+def size_pv_kwp(
+    daily_kwh: float,
+    latitude: float,
+    longitude: float,
+    peak_sun_hours: Optional[float] = None,
+    self_sufficiency: float = kWpSizer.DEFAULT_SELF_SUFFICIENCY,
+    loss_factor: float = kWpSizer.DEFAULT_LOSS_FACTOR
+) -> float:
+    """
+    Quick helper function to get recommended kWp without creating a class instance.
+    
+    Args:
+        daily_kwh: Average daily consumption in kWh.
+        latitude: Site latitude in decimal degrees.
+        longitude: Site longitude in decimal degrees.
+        peak_sun_hours: Average daily PSH. If None, estimated from latitude.
+        self_sufficiency: Target self-sufficiency ratio (0.0-1.0).
+        loss_factor: System loss multiplier (1.0 = no losses).
+    
+    Returns:
+        Recommended system size in kWp.
+    
+    Example:
+        >>> kwp = size_pv_kwp(daily_kwh=30, latitude=47.38, longitude=8.54)
+        >>> print(f"{kwp} kWp recommended")
+    """
+    sizer = kWpSizer(latitude, longitude, peak_sun_hours, loss_factor)
+    result = sizer.size_from_daily(daily_kwh, self_sufficiency)
+    return result.recommended_kwp

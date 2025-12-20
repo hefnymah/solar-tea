@@ -9,8 +9,8 @@ import pandas as pd
 import numpy as np
 from typing import Optional
 
-from src.battery.simulator import BatterySimulator
-from src.config.equipment_models import MockBattery
+from eclipse.battery.simulator import BatterySimulator
+from eclipse.config.equipment_models import MockBattery
 
 
 class SimpleBatterySimulator(BatterySimulator):

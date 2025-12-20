@@ -12,8 +12,8 @@ from typing import Optional
 
 import PySAM.BatteryStateful as BatteryStateful
 
-from src.battery.simulator import BatterySimulator
-from src.config.equipment_models import MockBattery
+from eclipse.battery.simulator import BatterySimulator
+from eclipse.config.equipment_models import MockBattery
 
 
 class PySAMBatterySimulator(BatterySimulator):

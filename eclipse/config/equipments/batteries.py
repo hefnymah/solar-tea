@@ -1,5 +1,5 @@
 
-from src.config.equipment_models import MockBattery
+from eclipse.config.equipment_models import MockBattery
 
 
 PySAM_Test_Battery = MockBattery(

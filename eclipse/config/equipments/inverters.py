@@ -1,5 +1,5 @@
 
-from src.config.equipment_models import MockInverter
+from eclipse.config.equipment_models import MockInverter
 
 
 SMA_SunnyBoy_5_0 = MockInverter(

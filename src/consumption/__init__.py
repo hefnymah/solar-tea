@@ -1,3 +1,0 @@
-"""
-Consumption Analysis Package
-"""

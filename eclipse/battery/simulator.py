@@ -10,7 +10,7 @@ from typing import Optional, List
 import pandas as pd
 import numpy as np
 
-from src.config.equipment_models import MockBattery
+from eclipse.config.equipment_models import MockBattery
 
 
 class BatterySimulator(ABC):

@@ -8,11 +8,11 @@ import sys
 import pandas as pd
 import pvlib
 from typing import Optional, List
-from src.config.equipment_models import MockModule, MockInverter, MockBattery
+from eclipse.config.equipment_models import MockModule, MockInverter, MockBattery
 
 # Ensure root (solar-tea) is in path to find customization
 # sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
-from src.config.equipments import INVERTER_DB
+from eclipse.config.equipments import INVERTER_DB
 
 # --- Real Data Integration ---
 
@@ -27,7 +27,7 @@ def get_real_databases():
     Returns curated databases as DataFrames for compatibility with search logic.
     Source: src/config/equipments
     """
-    from src.config.equipments import MODULE_DB, INVERTER_DB
+    from eclipse.config.equipments import MODULE_DB, INVERTER_DB
     
     # Convert list of dataclasses to DataFrame
     # Transpose is NOT needed here because our list is row-based, 

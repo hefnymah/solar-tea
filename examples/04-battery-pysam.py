@@ -17,9 +17,9 @@ import os
 # Ensure root is in path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-from src.config.equipments.batteries import pysam as battery
-from src.battery import PySAMBatterySimulator
-from src.synthetic import generate_scenario
+from eclipse.config.equipments.batteries import pysam as battery
+from eclipse.battery import PySAMBatterySimulator
+from eclipse.synthetic import generate_scenario
 
 def main():
     print(f"=== Battery Simulation Example ({battery.name}) ===\n")

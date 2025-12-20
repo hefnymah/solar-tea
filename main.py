@@ -12,21 +12,21 @@ import os
 # Ensure root is in path for imports
 sys.path.append(os.path.dirname(__file__))
 
-from src.config.equipments import MODULE_DB, INVERTER_DB
-from src.config.equipments.modules import module
-from src.config.equipments.inverters import inverter
-from src.config.equipments.batteries import battery
-from src.equipment_logic import (
+from eclipse.config.equipments import MODULE_DB, INVERTER_DB
+from eclipse.config.equipments.modules import module
+from eclipse.config.equipments.inverters import inverter
+from eclipse.config.equipments.batteries import battery
+from eclipse.equipment_logic import (
     check_module_inverter_compat, get_compatible_inverter,
     get_real_databases, search_equipment, adapt_sandia_module, adapt_cec_inverter
 )
-from src.roof_sizing import suggest_best_orientation
+from eclipse.roof_sizing import suggest_best_orientation
 
-from src.pv_generation import simulate_pv_generation
-from src.battery_sizing import optimize_battery_size, optimize_battery_cost, simulate_battery
-from src.battery_pysam import simulate_pysam_battery
+from eclipse.pv_generation import simulate_pv_generation
+from eclipse.battery_sizing import optimize_battery_size, optimize_battery_cost, simulate_battery
+from eclipse.battery_pysam import simulate_pysam_battery
 
-from src.synthetic import generate_load_profile
+from eclipse.synthetic import generate_load_profile
 
 def main():
     print("=== Perplexity PV & Battery Sizing Tool ===\n")

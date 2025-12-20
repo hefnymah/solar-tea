@@ -5,8 +5,8 @@ import sys
 # Ensure project root is in path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-#from src.config.equipments.modules import Jinko400, Longi550, Trina550
-from src.config.equipments.modules import module
+#from eclipse.config.equipments.modules import Jinko400, Longi550, Trina550
+from eclipse.config.equipments.modules import module
 
 def main():
     print("=== Module Access & Degradation Example ===\n")

@@ -47,10 +47,23 @@ solar-tea/
    source venv/bin/activate
    ```
 
-3. **Install dependencies**:
+3. **Install the package**:
+   
+   Using `pyproject.toml` (recommended):
+   ```bash
+   pip install -e .
+   ```
+   
+   Or with development dependencies:
+   ```bash
+   pip install -e ".[dev]"
+   ```
+   
+   Or using `requirements.txt`:
    ```bash
    pip install -r requirements.txt
    ```
+
 
 ## Usage
 
@@ -66,6 +79,29 @@ python main.py
 4. **PV Simulation**: Simulates annual production using local TMY (or clear sky proxy) weather data.
 5. **Battery Optimization**: Calculates optimal battery size for 1-day autonomy and cost-effectiveness.
 6. **Validation**: API calls to `PySAM` validate the self-sufficiency calculations.
+
+
+## Testing
+
+Run the test suite with pytest:
+
+```bash
+pytest tests/ -v
+```
+
+Run tests with coverage report:
+
+```bash
+pytest tests/ -v --cov=eclipse/consumption --cov-report=term-missing
+```
+
+The test suite includes comprehensive unit tests for:
+- `TimeSeriesAccessor` - Data accessor with aggregation methods
+- `SeasonalAccessor` - Seasonal data filtering and profiling
+- `ConsumptionData` - Main OOP data entry point
+- `ConsumptionPlotter` - Separated plotting logic
+
+Current test coverage: **81%** across the consumption module.
 
 ## Dependencies
 

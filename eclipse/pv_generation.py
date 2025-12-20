@@ -7,7 +7,7 @@ from pvlib.location import Location
 from pvlib.temperature import TEMPERATURE_MODEL_PARAMETERS
 from dataclasses import asdict
 
-from src.config.equipment_models import MockModule, MockInverter
+from eclipse.config.equipment_models import MockModule, MockInverter
 
 def get_tmy_data(latitude, longitude):
     """

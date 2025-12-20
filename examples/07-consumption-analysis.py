@@ -13,7 +13,7 @@ import glob
 # Ensure root is in path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-from src.consumption.analyzer import ConsumptionAnalyzer
+from eclipse.consumption.analyzer import ConsumptionAnalyzer
 
 def main():
     print("=== Consumption Analysis Batch Processor ===\n")
