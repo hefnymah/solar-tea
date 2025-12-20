@@ -26,7 +26,7 @@ from src.pv_generation import simulate_pv_generation
 from src.battery_sizing import optimize_battery_size, optimize_battery_cost, simulate_battery
 from src.battery_pysam import simulate_pysam_battery
 
-from src.synthetic_profiles import generate_load_profile
+from src.synthetic import generate_load_profile
 
 def main():
     print("=== Perplexity PV & Battery Sizing Tool ===\n")

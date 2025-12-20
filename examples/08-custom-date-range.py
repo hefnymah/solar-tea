@@ -12,6 +12,17 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from src.consumption.analyzer import ConsumptionAnalyzer
 
+
+#%%
+data_file = os.path.join(os.path.dirname(__file__), '..', 'data', 'consumption', '20251212_consumption-frq-15min.csv')
+output_dir = os.path.join(os.path.dirname(__file__), 'outputs', 'custom_ranges')
+os.makedirs(output_dir, exist_ok=True)
+
+# Initialize analyzer and load data
+analyzer = ConsumptionAnalyzer()
+
+#%%
+
 def main():
     print("=== Custom Date Range Plotting Demo ===\n")
     

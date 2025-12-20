@@ -19,7 +19,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from src.config.equipments.batteries import pysam as battery
 from src.battery import PySAMBatterySimulator
-from src.synthetic_profiles import generate_scenario
+from src.synthetic import generate_scenario
 
 def main():
     print(f"=== Battery Simulation Example ({battery.name}) ===\n")
