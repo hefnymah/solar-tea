@@ -6,3 +6,5 @@ __pycache__/
 
 # Ignore outputs from examples
 examples/outputs/*
+
+*.egg-info/

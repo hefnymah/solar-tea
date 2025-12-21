@@ -1,7 +1,9 @@
 
 from eclipse.config.equipment_models import MockBattery
 
-
+# ====================================
+# PySAM Test Battery
+# ====================================
 PySAM_Test_Battery = MockBattery(
     name="PySAM_Test_Battery",
     nominal_energy_kwh=10.0,        # PySAM: nominal_energy
@@ -72,6 +74,9 @@ PySAM_Test_Battery = MockBattery(
     economics={"price_per_unit": 5000}
 )
 
+# ====================================
+# Tesla Powerwall 2
+# ====================================
 Tesla_Powerwall_2 = MockBattery(
     name="Tesla_Powerwall_2",
     nominal_energy_kwh=13.5,
@@ -106,6 +111,9 @@ Tesla_Powerwall_2 = MockBattery(
     }
 )
 
+# ====================================
+# BYD Battery Box Premium HVS 10.2
+# ====================================
 BYD_Battery_Box_Premium_HVS_10_2 = MockBattery(
     name="BYD_Battery-Box_Premium_HVS_10.2",
     nominal_energy_kwh=10.2,
@@ -139,6 +147,9 @@ BYD_Battery_Box_Premium_HVS_10_2 = MockBattery(
     }
 )
 
+# ====================================
+# LG Chem RESU 10H
+# ====================================
 LG_Chem_RESU_10H = MockBattery(
     name="LG_Chem_RESU_10H",
     nominal_energy_kwh=9.8,
@@ -171,6 +182,9 @@ LG_Chem_RESU_10H = MockBattery(
     }
 )
 
+# ====================================
+# Generic Lead Acid 10kWh
+# ====================================
 Generic_LeadAcid_10kWh = MockBattery(
     name="Generic_LeadAcid_10kWh",
     nominal_energy_kwh=10.0,

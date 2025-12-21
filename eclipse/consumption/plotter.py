@@ -23,6 +23,8 @@ import matplotlib.pyplot as plt
 if TYPE_CHECKING:
     from eclipse.consumption.data import ConsumptionData
 
+from eclipse.consumption.data import TimeSeriesAccessor
+
 
 class ConsumptionPlotter:
     """
@@ -154,35 +156,25 @@ class ConsumptionPlotter:
         Returns:
             Path to saved plot.
         """
-        hourly = self._data.hourly.dataframe
-        value_col = self._data.VALUE_COL
-        
-        # Find max/min weeks
-        df_weekly = hourly[value_col].resample('W').sum()
-        max_week_date = df_weekly.idxmax()
-        min_week_date = df_weekly.idxmin()
-        
-        def get_week_slice(end_date):
-            start = end_date - pd.Timedelta(days=6)
-            end_slice = end_date + pd.Timedelta(hours=23, minutes=59)
-            mask = (hourly.index >= start) & (hourly.index <= end_slice)
-            return hourly.loc[mask], start, end_date
-        
-        max_week_df, max_start, max_end = get_week_slice(max_week_date)
-        min_week_df, min_start, min_end = get_week_slice(min_week_date)
+        # Get extreme weeks data from ConsumptionData
+        extremes = self._data.get_extreme_weeks()
+        max_week = extremes['max_week']
+        min_week = extremes['min_week']
+        max_dates = extremes['max_dates']
+        min_dates = extremes['min_dates']
         
         fig, ax = plt.subplots(figsize=(12, 6))
         
-        if not max_week_df.empty:
-            x_max = np.arange(len(max_week_df))
-            ax.plot(x_max, max_week_df[value_col].values, color='red', 
-                   label=f"Max Week ({max_start.strftime('%b %d')} - {max_end.strftime('%b %d')})", 
+        if len(max_week) > 0:
+            x_max = np.arange(len(max_week))
+            ax.plot(x_max, max_week.values, color='red', 
+                   label=f"Max Week ({max_dates[0].strftime('%b %d')} - {max_dates[1].strftime('%b %d')})", 
                    linewidth=2)
         
-        if not min_week_df.empty:
-            x_min = np.arange(len(min_week_df))
-            ax.plot(x_min, min_week_df[value_col].values, color='green',
-                   label=f"Min Week ({min_start.strftime('%b %d')} - {min_end.strftime('%b %d')})",
+        if len(min_week) > 0:
+            x_min = np.arange(len(min_week))
+            ax.plot(x_min, min_week.values, color='green',
+                   label=f"Min Week ({min_dates[0].strftime('%b %d')} - {min_dates[1].strftime('%b %d')})",
                    linewidth=2)
         
         ax.set_title("Extreme Weeks Consumption Analysis (High vs Low)")
@@ -210,19 +202,6 @@ class ConsumptionPlotter:
         Returns:
             Path to saved plot.
         """
-        hourly = self._data.hourly.dataframe
-        value_col = self._data.VALUE_COL
-        
-        # Determine year from data
-        year = pd.Series(hourly.index.year).mode()[0]
-        
-        # Import scipy for smoothing
-        try:
-            from scipy.interpolate import make_interp_spline
-            has_scipy = True
-        except ImportError:
-            has_scipy = False
-        
         fig, axes = plt.subplots(4, 1, figsize=(12, 16), sharey=False)
         season_order = ['winter', 'spring', 'summer', 'autumn']
         
@@ -231,44 +210,34 @@ class ConsumptionPlotter:
             
             if season in self.seasonal_weeks:
                 month, day = self.seasonal_weeks[season]
-                try:
-                    start_date = pd.Timestamp(year=year, month=month, day=day)
-                    end_date = start_date + pd.Timedelta(days=7)
-                    mask = (hourly.index >= start_date) & (hourly.index < end_date)
-                    df_slice = hourly.loc[mask]
+                # Get typical week using data.py method
+                week_data = self._data.seasons.get_typical_week(season, month, day)
+                
+                if len(week_data) > 0:
+                    df = week_data.dataframe
+                    y = week_data.values
+                    color = self.season_colors.get(season, 'black')
                     
-                    if not df_slice.empty:
-                        x = np.arange(len(df_slice))
-                        y = df_slice[value_col].values
-                        color = self.season_colors.get(season, 'black')
-                        
-                        ax.scatter(df_slice.index, y, color=color, alpha=0.3, s=10)
-                        
-                        if has_scipy and len(x) > 3:
-                            try:
-                                x_smooth = np.linspace(x.min(), x.max(), 500)
-                                spl = make_interp_spline(x, y, k=3)
-                                y_smooth = np.maximum(spl(x_smooth), 0)
-                                time_smooth = pd.date_range(
-                                    start=df_slice.index[0], 
-                                    end=df_slice.index[-1], 
-                                    periods=500
-                                )
-                                ax.plot(time_smooth, y_smooth, color=color, linewidth=2, 
-                                       label=f"{season.title()} (Smooth)")
-                            except Exception:
-                                ax.plot(df_slice.index, y, color=color, linewidth=2, label=season.title())
-                        else:
-                            ax.plot(df_slice.index, y, color=color, linewidth=2, label=season.title())
-                        
-                        ax.set_title(f"{season.title()} Week ({start_date.date()} - {end_date.date()})")
-                        ax.set_ylabel("kWh")
-                        ax.grid(True, alpha=0.3)
-                    else:
-                        ax.text(0.5, 0.5, "No Data", ha='center', va='center', transform=ax.transAxes)
-                        ax.set_title(f"{season.title()} Week - N/A")
-                except ValueError:
-                    ax.text(0.5, 0.5, "Invalid Date", ha='center', va='center', transform=ax.transAxes)
+                    # Scatter plot for raw data
+                    ax.scatter(df.index, y, color=color, alpha=0.3, s=10)
+                    
+                    # Get smoothed data using new method
+                    try:
+                        smoothed = week_data.smooth(method='spline', points=500)
+                        ax.plot(smoothed.index, smoothed[self._data.VALUE_COL], 
+                               color=color, linewidth=2, label=f"{season.title()} (Smooth)")
+                    except Exception:
+                        # Fallback to non-smoothed
+                        ax.plot(df.index, y, color=color, linewidth=2, label=season.title())
+                    
+                    start_date = df.index[0]
+                    end_date = df.index[-1]
+                    ax.set_title(f"{season.title()} Week ({start_date.date()} - {end_date.date()})")
+                    ax.set_ylabel("kWh")
+                    ax.grid(True, alpha=0.3)
+                else:
+                    ax.text(0.5, 0.5, "No Data", ha='center', va='center', transform=ax.transAxes)
+                    ax.set_title(f"{season.title()} Week - N/A")
             else:
                 ax.text(0.5, 0.5, "Config Missing", ha='center', va='center', transform=ax.transAxes)
         
@@ -287,30 +256,26 @@ class ConsumptionPlotter:
         """
         profile = self._data.seasons.profile
         
-        try:
-            from scipy.interpolate import make_interp_spline
-            has_scipy = True
-        except ImportError:
-            has_scipy = False
-        
         fig, ax = plt.subplots(figsize=(10, 6))
         
-        x = np.arange(24)
-        x_smooth = np.linspace(x.min(), x.max(), 300)
-        
         for season in profile.columns:
-            y = profile[season].values
+            # Create TimeSeriesAccessor for smoothing
+            season_profile = pd.DataFrame({self._data.VALUE_COL: profile[season].values}, 
+                                         index=pd.date_range('2024-01-01', periods=24, freq='h'))
+            accessor = TimeSeriesAccessor(season_profile, self._data.VALUE_COL)
+            
             color = self.season_colors.get(season, 'black')
             
-            if has_scipy:
-                try:
-                    spl = make_interp_spline(x, y, k=3)
-                    y_smooth = np.maximum(spl(x_smooth), 0)
-                    ax.plot(x_smooth, y_smooth, label=season.title(), color=color, linewidth=2)
-                except Exception:
-                    ax.plot(x, y, label=season.title(), color=color, linewidth=2)
-            else:
-                ax.plot(x, y, label=season.title(), color=color, linewidth=2)
+            # Smooth the daily profile
+            try:
+                smoothed = accessor.smooth(method='spline', points=300)
+                hours_smooth = np.linspace(0, 23, 300)
+                ax.plot(hours_smooth, smoothed[self._data.VALUE_COL].values, 
+                       label=season.title(), color=color, linewidth=2)
+            except Exception:
+                # Fallback to non-smoothed
+                x = np.arange(24)
+                ax.plot(x, profile[season].values, label=season.title(), color=color, linewidth=2)
         
         ax.set_title("Typical Daily Load Profile by Season")
         ax.set_xlabel("Hour of Day")

@@ -28,6 +28,54 @@ print(f"1. Loading: {os.path.basename(file_path)}")
 data = ConsumptionData.from_file(file_path)
 print(f"   {data}\n")
 
+#%%
+
+hrs = data.hourly.dataframe
+# Instead of relying on Variable Explorer, print or access directly:
+print(data.hourly.dataframe.head())
+print(data.daily.dataframe)
+print(data.seasons.winter.dataframe)
+
+# Or assign to simple variables for inspection:
+hourly_df = data.hourly.dataframe
+daily_df = data.daily.dataframe
+seasons = data.seasons.summer.dataframe
+
+#%%
+# Get the seasonal daily profile
+seasonal_profile = data.seasons.profile
+print(seasonal_profile)
+
+
+#%%
+# Get hourly data for a season, then resample to daily
+winter_hourly = data.seasons.winter.dataframe
+winter_daily = winter_hourly.resample('D').sum()  # Daily totals
+
+# Or directly get daily data for a season
+winter_data = data.seasons.winter
+winter_daily_series = winter_data.dataframe.resample('D').sum()
+
+# Get a typical week for a season (new method!)
+winter_week = data.seasons.get_typical_week('winter')  # Default: Jan 15-22
+winter_week_df = winter_week.dataframe
+
+# Custom week dates
+summer_week = data.seasons.get_typical_week('summer', month=7, day=20)
+summer_week_df = summer_week.dataframe
+
+# Get extreme weeks (min/max consumption)
+extremes = data.get_extreme_weeks()
+max_week_df = extremes['max_week'].dataframe  # Highest consumption week
+min_week_df = extremes['min_week'].dataframe  # Lowest consumption week
+
+# Daily data from extreme weeks
+max_week_daily = extremes['max_week'].dataframe.resample('D').sum()
+
+# Get smoothed data for any period
+jan_week = data.slice('2024-01-15', '2024-01-21')
+jan_week_smooth = jan_week.smooth(method='spline', points=500)  # Smoothed DataFrame
+#%%
 # 2. Access nested data
 print("2. Data Access Examples")
 print(f"   data.hourly.sum()         = {data.hourly.sum():.0f} kWh (annual total)")
@@ -61,6 +109,10 @@ output_dir = os.path.join(os.path.dirname(__file__), 'outputs', '09-oop-demo')
 
 plotter = ConsumptionPlotter(data, output_dir=output_dir)
 paths = plotter.plot_all(prefix="demo")
+
+plotter.plot_seasonal_daily_profile()
+
+plotter.plot_extreme_weeks()
 
 print(f"   Saved {len(paths)} plots to: {output_dir}")
 for name, path in paths.items():

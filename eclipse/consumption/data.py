@@ -89,6 +89,45 @@ class TimeSeriesAccessor:
         """Returns the standard deviation."""
         return float(self._df[self._value_col].std())
     
+    def smooth(self, method: str = 'spline', points: int = 300) -> pd.DataFrame:
+        """
+        Returns smoothed version of the time series.
+        
+        Args:
+            method: Smoothing method ('spline' or 'rolling').
+            points: Number of interpolation points for spline.
+            
+        Returns:
+            DataFrame with smoothed values and interpolated timestamps.
+        """
+        if len(self._df) < 4:
+            # Not enough points for smoothing
+            return self._df.copy()
+        
+        if method == 'spline':
+            try:
+                from scipy.interpolate import make_interp_spline
+                x = np.arange(len(self._df))
+                y = self.values
+                x_smooth = np.linspace(x.min(), x.max(), points)
+                spl = make_interp_spline(x, y, k=3)
+                y_smooth = np.maximum(spl(x_smooth), 0)  # Prevent negative values
+                
+                # Create interpolated timestamps
+                time_smooth = pd.date_range(
+                    start=self.index[0],
+                    end=self.index[-1],
+                    periods=points
+                )
+                return pd.DataFrame({self._value_col: y_smooth}, index=time_smooth)
+            except ImportError:
+                # Fallback to rolling average if scipy not available
+                return self._df.rolling(window=min(24, len(self._df)//10), center=True).mean()
+        else:
+            # Rolling average
+            window = min(24, len(self._df) // 10)
+            return self._df.rolling(window=window, center=True).mean()
+    
     def __len__(self) -> int:
         return len(self._df)
     
@@ -180,6 +219,50 @@ class SeasonalAccessor:
             if month in months:
                 return season
         return 'unknown'
+    
+    def get_typical_week(
+        self, 
+        season: str, 
+        month: Optional[int] = None, 
+        day: Optional[int] = None
+    ) -> TimeSeriesAccessor:
+        """
+        Returns a representative week of data for the specified season.
+        
+        Args:
+            season: Season name ('winter', 'spring', 'summer', 'autumn').
+            month: Optional specific month (otherwise uses mid-season default).
+            day: Optional specific day (otherwise uses 15th).
+            
+        Returns:
+            TimeSeriesAccessor containing one week of data.
+        """
+        # Default typical weeks
+        defaults = {
+            'winter': (1, 15),
+            'spring': (4, 15),
+            'summer': (7, 15),
+            'autumn': (10, 15)
+        }
+        
+        if month is None or day is None:
+            month, day = defaults.get(season, (1, 15))
+        
+        # Determine year from data
+        year = int(pd.Series(self._hourly_df.index.year).mode()[0])
+        
+        try:
+            start_date = pd.Timestamp(year=year, month=month, day=day)
+            end_date = start_date + pd.Timedelta(days=7)
+            mask = (self._hourly_df.index >= start_date) & (self._hourly_df.index < end_date)
+            df_week = self._hourly_df.loc[mask].copy()
+            return TimeSeriesAccessor(df_week, self._value_col)
+        except ValueError:
+            # Invalid date, return empty
+            return TimeSeriesAccessor(
+                pd.DataFrame([], columns=[self._value_col]).set_index(pd.DatetimeIndex([])),
+                self._value_col
+            )
     
     def __repr__(self) -> str:
         return f"SeasonalAccessor(winter={len(self.winter)}, summer={len(self.summer)} rows)"
@@ -363,6 +446,44 @@ class ConsumptionData:
         mask = (self._hourly.index >= pd.to_datetime(start)) & \
                (self._hourly.index <= pd.to_datetime(end))
         return TimeSeriesAccessor(self._hourly.loc[mask].copy(), self.VALUE_COL)
+    
+    def get_extreme_weeks(self) -> Dict[str, Any]:
+        """
+        Identifies and returns data for weeks with maximum and minimum total consumption.
+        
+        Returns:
+            Dictionary with keys:
+                - 'max_week': TimeSeriesAccessor for highest consumption week
+                - 'min_week': TimeSeriesAccessor for lowest consumption week
+                - 'max_total': Total kWh for max week
+                - 'min_total': Total kWh for min week
+                - 'max_dates': (start_date, end_date) for max week
+                - 'min_dates': (start_date, end_date) for min week
+        """
+        # Resample to weekly and find extreme weeks
+        weekly_totals = self._hourly[self.VALUE_COL].resample('W').sum()
+        max_week_end = weekly_totals.idxmax()
+        min_week_end = weekly_totals.idxmin()
+        
+        def get_week_data(end_date):
+            start = end_date - pd.Timedelta(days=6)
+            end_slice = end_date + pd.Timedelta(hours=23, minutes=59)
+            mask = (self._hourly.index >= start) & (self._hourly.index <= end_slice)
+            df_week = self._hourly.loc[mask].copy()
+            total = df_week[self.VALUE_COL].sum()
+            return TimeSeriesAccessor(df_week, self.VALUE_COL), total, start, end_date
+        
+        max_accessor, max_total, max_start, max_end = get_week_data(max_week_end)
+        min_accessor, min_total, min_start, min_end = get_week_data(min_week_end)
+        
+        return {
+            'max_week': max_accessor,
+            'min_week': min_accessor,
+            'max_total': max_total,
+            'min_total': min_total,
+            'max_dates': (max_start, max_end),
+            'min_dates': (min_start, min_end)
+        }
     
     def __repr__(self) -> str:
         total = self.hourly.sum()

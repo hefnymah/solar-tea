@@ -4,8 +4,9 @@ from eclipse.config.equipment_models import MockModule
 # Mock Database (User Customizable)
 # Enriched with full specs from manufacturer datasheets (via JSON extraction)
 
-
-# Individual Exports for Easy Import
+# ====================================
+# Jinko JKM400M 54HL4 B
+# ====================================
 Jinko400 = MockModule(
     name="Jinko_JKM400M_54HL4_B",
     power_watts=400.0,
@@ -79,6 +80,9 @@ Jinko400 = MockModule(
     }
 )
 
+# ====================================
+# Longi LR5 72HTH 550M
+# ====================================
 Longi550 = MockModule(
     name="Longi_LR5_72HTH_550M",
     power_watts=550.0,
@@ -150,6 +154,9 @@ Longi550 = MockModule(
     }
 )
 
+# ====================================
+# Trina TSM DEG21C 20 550
+# ====================================
 Trina550 = MockModule(
     name="Trina_TSM_DEG21C_20_550",
     power_watts=550.0,

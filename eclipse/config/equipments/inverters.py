@@ -2,6 +2,9 @@
 from eclipse.config.equipment_models import MockInverter
 
 
+# ====================================
+# SMA SunnyBoy 5.0
+# ====================================
 SMA_SunnyBoy_5_0 = MockInverter(
     name="SMA_SunnyBoy_5.0", 
     max_ac_power=5000, 
@@ -38,6 +41,9 @@ SMA_SunnyBoy_5_0 = MockInverter(
     }
 )
 
+# ====================================
+# Huawei SUN2000 10KTL
+# ====================================
 Huawei_SUN2000_10KTL = MockInverter(
     name="Huawei_SUN2000_10KTL", 
     max_ac_power=10000, 
@@ -72,6 +78,9 @@ Huawei_SUN2000_10KTL = MockInverter(
     }
 )
 
+# ====================================
+# Fronius Symo Gen24 10.0
+# ====================================
 Fronius_Symo_Gen24_10_0 = MockInverter(
     name="Fronius_Symo_Gen24_10.0", 
     max_ac_power=10000, 
@@ -107,6 +116,9 @@ Fronius_Symo_Gen24_10_0 = MockInverter(
     }
 )
 
+# ====================================
+# GoodWe GW5000 ES Hybrid
+# ====================================
 GoodWe_GW5000_ES_Hybrid = MockInverter(
     name="GoodWe_GW5000_ES_Hybrid", 
     max_ac_power=5000, 
@@ -140,6 +152,9 @@ GoodWe_GW5000_ES_Hybrid = MockInverter(
     }
 )
 
+# ====================================
+# Enphase IQ 8M
+# ====================================
 Enphase_IQ8M = MockInverter(
     name="Enphase_IQ8M", 
     max_ac_power=325, 
