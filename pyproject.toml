@@ -56,6 +56,16 @@ dev = [
 spyder = [
     "spyder-kernels>=2.4",
 ]
+optimization = [
+    "pymoo>=0.6",           # NSGA-II multi-objective optimization
+    "pulp>=2.7",            # MILP linear programming
+]
+economics = [
+    "numpy-financial>=1.0", # NPV, IRR calculations
+]
+all = [
+    "solar-tea[dev,spyder,optimization,economics]",
+]
 
 [project.urls]
 Homepage = "https://github.com/hefnymah/solar-tea"

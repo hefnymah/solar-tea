@@ -1,157 +1,157 @@
-
 # Solar-Tea: PV & Battery Sizing Tool
 
-A comprehensive Python-based tool for sizing Solar PV systems and Batteries, specifically tailored for Swiss residential scenarios. It integrates real equipment data (Sandia/CEC), `pvlib` for production simulation, and NREL's `PySAM` for high-fidelity battery dispatch analysis.
+A comprehensive Python-based tool for sizing Solar PV systems and Batteries, specifically tailored for Swiss residential scenarios. It integrates real equipment data, `pvlib` for production simulation, NREL's `PySAM` for battery dispatch, and a modular optimization framework.
 
 ## Features
 
-- **Real Equipment Database**: Automatically downloads and caches `SandiaMod` (Modules) and `CECInverter` databases.
-- **Smart Selection**: Searches for specific manufacturers (e.g., Canadian Solar, Fronius) and checks electrical compatibility (Voltage windows, current limits, DC/AC sizing).
+- **PV System Sizing**: Size systems for self-sufficiency or self-consumption targets
+- **Battery Integration**: Physics-based battery sizing with charging/discharging simulation
+- **Smart Optimization**: Modular optimization framework with pluggable algorithms
 - **High-Fidelity Simulation**:
-  - Uses `pvlib` with full SAPM/CEC parameter support for accurate generation profiles.
-  - Simulates battery behavior using NREL's `PySAM` BatteryStateful module.
-- **Optimization**:
-  - Heuristic battery sizing (Autonomy days).
-  - Cost-optimal sizing (minimizing CapEx + OpEx).
-- **Roof Fitting**: Geometric analysis to fit modules on a defined roof area (Portrait vs Landscape).
+  - Uses `pvlib` with PVGIS/TMY weather data
+  - Battery simulation via NREL's `PySAM` or built-in SimpleBatterySimulator
+- **Visualization**: Professional plots for monthly comparisons, seasonal profiles, battery SOC
 
-## Project Structure
+## Package Structure
 
 ```
 solar-tea/
-├── main.py                # Entry point script
-├── data/                  # Cached CSV databases (Sandia/CEC)
-├── customization/
-│   └── pv_equipments.py   # User customizable equipment lists
-├── src/
-│   ├── equipment_models.py# Dataclass schemas
-│   ├── equipment_logic.py # Data loading, search, and compatibility checks
-│   ├── pv_generation.py   # PVLib simulation logic
-│   ├── battery_sizing.py  # Basic battery simulation & cost optimization
-│   ├── battery_pysam.py   # NREL PySAM wrapper
-│   └── roof_sizing.py     # Roof layout logic
-└── requirements.txt       # Dependencies
+├── eclipse/                    # Main package
+│   ├── consumption/            # Load profile handling
+│   │   ├── data.py            # ConsumptionData class
+│   │   └── plotter.py         # Visualization
+│   ├── pvsim/                  # PV system simulation
+│   │   ├── system_sizer.py    # PVSystemSizer class
+│   │   ├── results_plotter.py # Visualization
+│   │   └── configs.py         # Location, Roof, Battery configs
+│   ├── battery/                # Battery simulation
+│   │   ├── simple.py          # SimpleBatterySimulator
+│   │   └── pysam.py           # PySAM integration
+│   ├── optimization/           # 🆕 Optimization module
+│   │   ├── base.py            # Abstract Optimizer class
+│   │   ├── objectives.py      # Objective functions
+│   │   └── sweep.py           # SweepOptimizer
+│   └── config/                 # Equipment configurations
+├── examples/                   # Usage examples
+│   ├── 10-pv-system-sizing.py # Basic PV sizing
+│   ├── 11-pv-battery-sizing.py# PV + battery demo
+│   ├── 12-auto-pv-battery-optimization.py
+│   ├── 13-ultimate-pv-battery-optimization.py
+│   └── 14-optimization-module-demo.py  # 🆕 OOP demo
+├── docs/                       # Documentation
+├── tests/                      # Unit tests
+└── data/                       # Sample data files
 ```
 
 ## Installation
 
-1. **Clone the repository**:
-   ```bash
-   git clone git@github.com:hefnymah/solar-tea.git
-   cd solar-tea
-   ```
-
-2. **Create a virtual environment** (recommended):
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   ```
-
-3. **Install the package**:
-   
-   Using `pyproject.toml` (recommended):
-   ```bash
-   pip install -e .
-   ```
-   
-   Or with development dependencies:
-   ```bash
-   pip install -e ".[dev]"
-   ```
-   
-   Or using `requirements.txt`:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-
-## Usage
-
-Run the main application:
 ```bash
-python main.py
+# Clone repository
+git clone git@github.com:hefnymah/solar-tea.git
+cd solar-tea
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install package
+pip install -e .
+
+# With optional dependencies
+pip install -e ".[optimization]"  # For advanced optimizers
+pip install -e ".[economics]"     # For NPV/IRR calculations
+pip install -e ".[all]"           # Everything
 ```
 
-### What happens?
-1. **Load Profile**: Generates a synthetic daily load profile for a Swiss household.
-2. **Equipment Search**: Looks for specific hardware in the cached databases.
-3. **Roof Analysis**: Fits selected modules to a 10m x 6m roof.
-4. **PV Simulation**: Simulates annual production using local TMY (or clear sky proxy) weather data.
-5. **Battery Optimization**: Calculates optimal battery size for 1-day autonomy and cost-effectiveness.
-6. **Validation**: API calls to `PySAM` validate the self-sufficiency calculations.
+## Quick Start
 
+### Basic PV Sizing
+
+```python
+from eclipse.consumption import ConsumptionData
+from eclipse.pvsim import PVSystemSizer, LocationConfig, RoofConfig
+
+# Load consumption data
+data = ConsumptionData.load("data/consumption/hourly.csv")
+
+# Configure system
+location = LocationConfig(latitude=47.38, longitude=8.54)
+roof = RoofConfig(tilt=30, azimuth=180, max_area_m2=50)
+
+# Size for 80% self-sufficiency
+sizer = PVSystemSizer(data, location, roof)
+result = sizer.size_for_self_sufficiency(target_percent=80)
+print(result)
+```
+
+### Using the Optimization Module
+
+```python
+from eclipse.optimization import SweepOptimizer, OptimizationBounds
+
+# Create optimizer (Strategy pattern - swappable)
+optimizer = SweepOptimizer(priority='performance')
+
+# Define search space
+bounds = OptimizationBounds(pv_max_kwp=10.0, battery_max_kwh=20.0)
+
+# Run optimization
+result = optimizer.optimize(
+    objective=lambda pv, bat: -sizer.simulate(pv, bat).self_sufficiency_pct,
+    bounds=bounds,
+    target_value=-80.0
+)
+```
+
+## Examples
+
+| Example | Description |
+|---------|-------------|
+| 10 | Basic PV system sizing |
+| 11 | PV + fixed battery integration |
+| 12 | Automatic battery optimization |
+| 13 | Joint PV + battery optimization |
+| 14 | OOP optimization module demo |
+
+Run examples:
+```bash
+python examples/14-optimization-module-demo.py
+```
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────┐
+│          OPTIMIZATION LAYER                  │
+│   SweepOptimizer | JAYA | NSGA-II | MILP    │
+└─────────────────────┬───────────────────────┘
+                      │
+┌─────────────────────┴───────────────────────┐
+│           PHYSICS SIMULATION                 │
+│   PVLib (PV) | PySAM/Simple (Battery)       │
+└─────────────────────────────────────────────┘
+```
 
 ## Testing
 
-Run the test suite with pytest:
-
 ```bash
 pytest tests/ -v
+pytest tests/ -v --cov=eclipse --cov-report=term-missing
 ```
-
-Run tests with coverage report:
-
-```bash
-pytest tests/ -v --cov=eclipse/consumption --cov-report=term-missing
-```
-
-The test suite includes comprehensive unit tests for:
-- `TimeSeriesAccessor` - Data accessor with aggregation methods
-- `SeasonalAccessor` - Seasonal data filtering and profiling
-- `ConsumptionData` - Main OOP data entry point
-- `ConsumptionPlotter` - Separated plotting logic
-
-Current test coverage: **81%** across the consumption module.
 
 ## Dependencies
 
-- **pvlib**: Core PV modeling.
-- **nrel-pysam**: Battery dispatch validation.
-- **pandas/numpy/scipy**: Data handling and optimization.
+**Core:**
+- `pvlib>=0.10` - PV modeling
+- `nrel-pysam>=5.0` - Battery simulation
+- `pandas>=2.0`, `numpy>=1.24`, `scipy>=1.10`
+- `matplotlib>=3.7` - Visualization
 
+**Optional:**
+- `pymoo>=0.6` - NSGA-II multi-objective optimization
+- `pulp>=2.7` - MILP linear programming
+- `numpy-financial>=1.0` - Economic analysis
 
-```bash
-my_package/
-├── src/
-│   └── my_package/
-│       ├── __init__.py
-│       ├── core/
-│       │   ├── __init__.py
-│       │   ├── base.py          # Abstract base classes
-│       │   ├── interfaces.py    # Protocol/ABC definitions
-│       │   └── exceptions.py    # Custom exceptions
-│       ├── models/
-│       │   ├── __init__.py
-│       │   └── entities.py      # Domain models
-│       ├── services/
-│       │   ├── __init__.py
-│       │   └── processors.py    # Business logic
-│       └── utils/
-│           ├── __init__.py
-│           └── helpers.py
-├── tests/
-│   ├── __init__.py
-│   ├── conftest.py              # Pytest fixtures
-│   ├── unit/
-│   │   ├── __init__.py
-│   │   └── test_core.py
-│   ├── integration/
-│   │   └── test_workflows.py
-│   └── fixtures/
-│       └── sample_data.json
-├── docs/
-│   ├── conf.py
-│   ├── index.rst
-│   └── api/
-├── examples/
-│   └── basic_usage.py
-├── pyproject.toml               # Modern Python packaging
-├── setup.cfg
-├── .pre-commit-config.yaml
-├── .github/
-│   └── workflows/
-│       └── ci.yml
-├── README.md
-├── CHANGELOG.md
-└── LICENSE
-```
+## License
+
+MIT License - See [LICENSE](LICENSE) file.

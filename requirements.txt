@@ -1,7 +1,17 @@
+# Core Dependencies
 pandas
 numpy
 scipy
-pvlib
-nrel-pysam
 matplotlib
 
+# PV Simulation
+pvlib
+nrel-pysam
+
+# Future: Advanced Optimization (uncomment when needed)
+# pymoo          # NSGA-II multi-objective optimization
+# pulp           # MILP linear programming
+# pyomo          # Advanced mathematical optimization
+
+# Future: Economics Module
+# numpy-financial  # NPV, IRR calculations

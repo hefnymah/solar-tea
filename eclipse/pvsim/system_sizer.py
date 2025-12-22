@@ -417,6 +417,40 @@ class PVSystemSizer:
         # Lazy-loaded simulation accessor
         self._simulation: Optional[SimulationAccessor] = None
     
+    def simulate(self, pv_kwp: float, battery_kwh: float = 0.0) -> 'SizingResult':
+        """
+        Run physics simulation for given PV and battery configuration.
+        
+        This is the primary interface for the optimization module.
+        Returns a full SizingResult with all metrics calculated.
+        
+        Args:
+            pv_kwp: PV system size in kWp.
+            battery_kwh: Battery capacity in kWh (default: 0 = no battery).
+            
+        Returns:
+            SizingResult with all performance metrics.
+        """
+        # Create temporary battery config if battery_kwh > 0
+        if battery_kwh > 0:
+            temp_battery = BatteryConfig(
+                capacity_kwh=battery_kwh,
+                power_kw=min(battery_kwh / 2, 10.0),  # C-rate 0.5
+                efficiency=0.95
+            )
+            # Temporarily set battery config
+            original_config = self._battery_config
+            self._battery_config = temp_battery
+            result = self._calculate_result(pv_kwp, constrained=False)
+            self._battery_config = original_config
+            return result
+        else:
+            # No battery - use instance config or none
+            if self._battery_config is not None:
+                return self._calculate_result(pv_kwp, constrained=False)
+            else:
+                return self._calculate_result(pv_kwp, constrained=False)
+    
     @property
     def simulation(self) -> SimulationAccessor:
         """Access to PV simulation results."""
