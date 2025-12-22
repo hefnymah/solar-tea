@@ -108,3 +108,50 @@ Current test coverage: **81%** across the consumption module.
 - **pvlib**: Core PV modeling.
 - **nrel-pysam**: Battery dispatch validation.
 - **pandas/numpy/scipy**: Data handling and optimization.
+
+
+```bash
+my_package/
+├── src/
+│   └── my_package/
+│       ├── __init__.py
+│       ├── core/
+│       │   ├── __init__.py
+│       │   ├── base.py          # Abstract base classes
+│       │   ├── interfaces.py    # Protocol/ABC definitions
+│       │   └── exceptions.py    # Custom exceptions
+│       ├── models/
+│       │   ├── __init__.py
+│       │   └── entities.py      # Domain models
+│       ├── services/
+│       │   ├── __init__.py
+│       │   └── processors.py    # Business logic
+│       └── utils/
+│           ├── __init__.py
+│           └── helpers.py
+├── tests/
+│   ├── __init__.py
+│   ├── conftest.py              # Pytest fixtures
+│   ├── unit/
+│   │   ├── __init__.py
+│   │   └── test_core.py
+│   ├── integration/
+│   │   └── test_workflows.py
+│   └── fixtures/
+│       └── sample_data.json
+├── docs/
+│   ├── conf.py
+│   ├── index.rst
+│   └── api/
+├── examples/
+│   └── basic_usage.py
+├── pyproject.toml               # Modern Python packaging
+├── setup.cfg
+├── .pre-commit-config.yaml
+├── .github/
+│   └── workflows/
+│       └── ci.yml
+├── README.md
+├── CHANGELOG.md
+└── LICENSE
+```

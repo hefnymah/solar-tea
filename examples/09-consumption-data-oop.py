@@ -45,7 +45,7 @@ seasons = data.seasons.summer.dataframe
 # Get the seasonal daily profile
 seasonal_profile = data.seasons.profile
 print(seasonal_profile)
-
+xxx = data.seasons.profile['winter'].max()
 
 #%%
 # Get hourly data for a season, then resample to daily
