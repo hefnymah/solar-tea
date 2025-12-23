@@ -120,17 +120,46 @@ python examples/14-optimization-module-demo.py
 
 ## Architecture
 
+### Optimization Layer
 ```
-┌─────────────────────────────────────────────┐
-│          OPTIMIZATION LAYER                  │
-│   SweepOptimizer | JAYA | NSGA-II | MILP    │
-└─────────────────────┬───────────────────────┘
-                      │
-┌─────────────────────┴───────────────────────┐
-│           PHYSICS SIMULATION                 │
-│   PVLib (PV) | PySAM/Simple (Battery)       │
-└─────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                    OPTIMIZATION LAYER                       │
+│  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐         │
+│  │  JAYA   │  │ NSGA-II │  │  MILP   │  │ Sweep   │ ...     │
+│  └────┬────┘  └────┬────┘  └────┬────┘  └────┬────┘         │
+│       └────────────┴────────────┴────────────┘              │
+│                         │                                   │
+│              Common Objective Function                      │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+┌─────────────────────────┴───────────────────────────────────┐
+│                   TECHNO-ECONOMIC MODULE                    │
+│  ┌──────────────┐  ┌──────────────┐  ┌───────────────┐      │
+│  │ CAPEX Model  │  │ OPEX Model   │  │ Revenue Model │      │
+│  │ (PV, Battery)│  │ (Maint, Grid)│  │ (Feed-in,     │      │
+│  └──────────────┘  └──────────────┘  │  Self-consume)│      │
+│                                      └───────────────┘      │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+┌─────────────────────────┴───────────────────────────────────┐
+│                    PHYSICS SIMULATION                       │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
+│  │   PVLib      │  │   PySAM      │  │   Battery    │       │
+│  │ (Irradiance, │  │ (Detailed    │  │ (Simple/PySAM│       │
+│  │  PV Model)   │  │  PV+Storage) │  │  Simulator)  │       │
+│  └──────────────┘  └──────────────┘  └──────────────┘       │
+└─────────────────────────────────────────────────────────────┘
+
 ```
+### Algorithm Selection Guide
+
+| Algorithm | Best For | Pros | Cons |
+|-----------|----------|------|------|
+| **JAYA** | Single-objective | No parameters, fast | Local optima |
+| **NSGA-II** | Multi-objective (cost vs performance) | Pareto front | Slower |
+| **MILP/PuLP** | Linear/convex problems | Global optimum | Limited to linear models |
+| **Sweep** | Quick estimates | Simple, interpretable | Coarse grid |
+
 
 ## Testing
 

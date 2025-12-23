@@ -192,24 +192,34 @@ class ConsumptionPlotter:
         
         return self._save_figure(fig, filename)
     
-    def plot_seasonal_weeks(self, filename: str = 'seasonal_weeks_profile.png') -> str:
+    def plot_seasonal_weeks(
+        self, 
+        filename: str = 'seasonal_weeks_profile.png',
+        seasonal_weeks: Optional[Dict[str, tuple]] = None
+    ) -> str:
         """
         Plots a representative week for each season with smooth curves.
         
         Args:
             filename: Output filename.
+            seasonal_weeks: Optional dict to override week definitions.
+                           Format: {'winter': (month, day), 'spring': (month, day), ...}
+                           If not provided, uses defaults from __init__.
             
         Returns:
             Path to saved plot.
         """
+        # Use provided weeks or fall back to instance defaults
+        weeks_to_use = seasonal_weeks or self.seasonal_weeks
+        
         fig, axes = plt.subplots(4, 1, figsize=(12, 16), sharey=False)
         season_order = ['winter', 'spring', 'summer', 'autumn']
         
         for i, season in enumerate(season_order):
             ax = axes[i]
             
-            if season in self.seasonal_weeks:
-                month, day = self.seasonal_weeks[season]
+            if season in weeks_to_use:
+                month, day = weeks_to_use[season]
                 # Get typical week using data.py method
                 week_data = self._data.seasons.get_typical_week(season, month, day)
                 

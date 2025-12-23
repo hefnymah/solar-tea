@@ -27,7 +27,7 @@ Example (Legacy API):
 """
 
 from eclipse.consumption.data import ConsumptionData, TimeSeriesAccessor, SeasonalAccessor
-from eclipse.consumption.plotter import ConsumptionPlotter
+from eclipse.plotting import ConsumptionPlotter
 from eclipse.consumption.analyzer import ConsumptionAnalyzer
 
 __all__ = [

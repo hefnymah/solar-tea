@@ -23,7 +23,7 @@ import os
 from typing import Optional, Dict, Any
 
 from eclipse.consumption.data import ConsumptionData, TimeSeriesAccessor, SeasonalAccessor
-from eclipse.consumption.plotter import ConsumptionPlotter
+from eclipse.plotting import ConsumptionPlotter
 
 
 class ConsumptionAnalyzer:

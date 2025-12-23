@@ -312,6 +312,7 @@ class ConsumptionData:
         
         # Lazy initialization
         self._daily: Optional[pd.DataFrame] = None
+        self._weekly: Optional[pd.DataFrame] = None
         self._monthly: Optional[pd.DataFrame] = None
         self._seasons: Optional[SeasonalAccessor] = None
     
@@ -412,6 +413,13 @@ class ConsumptionData:
         if self._daily is None:
             self._daily = self._hourly[[self.VALUE_COL]].resample('D').sum()
         return TimeSeriesAccessor(self._daily, self.VALUE_COL)
+    
+    @property
+    def weekly(self) -> TimeSeriesAccessor:
+        """Weekly aggregated consumption data."""
+        if self._weekly is None:
+            self._weekly = self._hourly[[self.VALUE_COL]].resample('W').sum()
+        return TimeSeriesAccessor(self._weekly, self.VALUE_COL)
     
     @property
     def monthly(self) -> TimeSeriesAccessor:
