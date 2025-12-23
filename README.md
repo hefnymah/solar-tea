@@ -22,7 +22,7 @@ solar-tea/
 │   │   └── plotter.py         # Visualization
 │   ├── pvsim/                  # PV system simulation
 │   │   ├── system_sizer.py    # PVSystemSizer class
-│   │   ├── results_plotter.py # Visualization
+│   │   │                      # (plotter moved to eclipse/plotting/)
 │   │   └── configs.py         # Location, Roof, Battery configs
 │   ├── battery/                # Battery simulation
 │   │   ├── simple.py          # SimpleBatterySimulator

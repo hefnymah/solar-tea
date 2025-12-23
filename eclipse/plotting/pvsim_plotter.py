@@ -25,7 +25,7 @@ class SizingResultPlotter:
     and comparing generation with consumption.
     
     Example:
-        from eclipse.pvsim import SizingResultPlotter
+        from eclipse.plotting import SizingResultPlotter
         
         plotter = SizingResultPlotter(result)
         plotter.plot_monthly_comparison(output_path="comparison.png")

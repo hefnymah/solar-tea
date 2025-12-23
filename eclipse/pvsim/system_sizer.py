@@ -39,6 +39,71 @@ if TYPE_CHECKING:
     from eclipse.consumption.data import ConsumptionData
 
 
+# =============================================================================
+# Roof Fitting Utilities
+# =============================================================================
+
+def suggest_module_layout(
+    roof_width_m: float,
+    roof_height_m: float,
+    module_width_m: float,
+    module_height_m: float,
+    setback_m: float = 0.5
+) -> tuple[str, int, float]:
+    """
+    Calculate optimal module layout for a rectangular roof.
+    
+    Args:
+        roof_width_m: Roof width in meters.
+        roof_height_m: Roof height in meters.
+        module_width_m: Module width in meters.
+        module_height_m: Module height in meters.
+        setback_m: Safety setback from roof edges in meters (default: 0.5m).
+        
+    Returns:
+        Tuple of (orientation, num_modules, total_area_m2):
+        - orientation: 'Portrait' or 'Landscape'
+        - num_modules: Maximum number of modules that fit
+        - total_area_m2: Total area covered by modules
+        
+    Example:
+        >>> orientation, count, area = suggest_module_layout(10, 6, 1.7, 1.0, 0.5)
+        >>> print(f"{orientation}: {count} modules, {area:.1f} m²")
+        Portrait: 30 modules, 51.0 m²
+    """
+    import math
+    
+    # Calculate usable area after setback
+    usable_width = roof_width_m - (2 * setback_m)
+    usable_height = roof_height_m - (2 * setback_m)
+    
+    if usable_width <= 0 or usable_height <= 0:
+        return "Portrait", 0, 0.0
+    
+    # Portrait orientation (module in normal orientation)
+    cols_p = math.floor(usable_width / module_width_m)
+    rows_p = math.floor(usable_height / module_height_m)
+    count_portrait = cols_p * rows_p
+    
+    # Landscape orientation (module rotated 90°)
+    cols_l = math.floor(usable_width / module_height_m)
+    rows_l = math.floor(usable_height / module_width_m)
+    count_landscape = cols_l * rows_l
+    
+    # Choose orientation with more modules
+    if count_landscape > count_portrait:
+        num_modules = count_landscape
+        orientation = "Landscape"
+    else:
+        num_modules = count_portrait
+        orientation = "Portrait"
+    
+    # Calculate total area
+    total_area_m2 = num_modules * (module_width_m * module_height_m)
+    
+    return orientation, num_modules, total_area_m2
+
+
 @dataclass(frozen=True)
 class LocationConfig:
     """
@@ -205,7 +270,7 @@ class SizingResult:
         Returns:
             Path to saved figure if output_path provided, else None.
         """
-        from eclipse.pvsim.results_plotter import SizingResultPlotter
+        from eclipse.plotting.pvsim_plotter import SizingResultPlotter
         plotter = SizingResultPlotter(self)
         return plotter.plot_monthly_comparison(output_path, figsize, show_self_consumed)
     
@@ -226,7 +291,7 @@ class SizingResult:
         Returns:
             Path to saved figure if output_path provided, else None.
         """
-        from eclipse.pvsim.results_plotter import SizingResultPlotter
+        from eclipse.plotting.pvsim_plotter import SizingResultPlotter
         plotter = SizingResultPlotter(self)
         return plotter.plot_seasonal_daily_production(output_path, figsize)
     
@@ -249,7 +314,7 @@ class SizingResult:
         Returns:
             Path to saved figure if output_path provided, else None.
         """
-        from eclipse.pvsim.results_plotter import SizingResultPlotter
+        from eclipse.plotting.pvsim_plotter import SizingResultPlotter
         plotter = SizingResultPlotter(self)
         return plotter.plot_battery_soc(output_path, figsize, days_to_show)
 

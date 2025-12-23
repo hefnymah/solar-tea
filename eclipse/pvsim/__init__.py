@@ -9,12 +9,14 @@ from .system_sizer import (
     RoofConfig,
     BatteryConfig,
     SizingResult,
-    SimulationAccessor
+    SimulationAccessor,
+    suggest_module_layout
 )
-from .results_plotter import SizingResultPlotter
+# NOTE: SizingResultPlotter has been moved to eclipse.plotting.pvsim_plotter
+# Import it from: from eclipse.plotting import SizingResultPlotter
 
 __all__ = [
     'kWpSizer', 'EnergyProfile', 'kWpSizingResult', 'size_pv_kwp',
     'PVSystemSizer', 'LocationConfig', 'RoofConfig', 'BatteryConfig', 'SizingResult', 'SimulationAccessor',
-    'SizingResultPlotter'
+    'suggest_module_layout'
 ]

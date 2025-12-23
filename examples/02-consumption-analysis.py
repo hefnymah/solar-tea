@@ -64,7 +64,9 @@ winter_hourly  = data.seasons.winter.dataframe
 winter_daily   = winter_hourly.resample('D').sum()  # Daily totals
 winter_weekly  = winter_daily.resample('W').sum()   # Weekly totals
 winter_monthly = winter_daily.resample('M').sum()   # Monthly totals
+winter_monthly = winter_daily.resample('ME').sum()  # ME is Monthly End   
 winter_annual  = winter_daily.resample('Y').sum()   # Annual totals
+winter_annual  = winter_daily.resample('YE').sum()   # YE is Year End
 
 #%% Get a typical week for a season (new method!)
 
@@ -106,9 +108,9 @@ plotter.plot_monthly()
 plotter.plot_heatmap()
 plotter.plot_extreme_weeks()
 plotter.plot_seasonal_weeks(seasonal_weeks={
-    'winter': (1, 20),   # month=1 (Jan), day=20
+    'winter': (1, 1),   # month=1 (Jan), day=20
     'spring': (4, 15),   # month=4 (Apr), day=15
-    'summer': (8, 1),    # month=8 (Aug), day=1
+    'summer': (9, 2),    # month=8 (Aug), day=1
     'autumn': (10, 5)    # month=10 (Oct), day=5
     })
 
