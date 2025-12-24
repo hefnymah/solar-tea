@@ -8,9 +8,14 @@ import os
 sys.path.append(os.path.dirname(__file__))
 
 from eclipse.config.equipments import MODULE_DB, INVERTER_DB
-from eclipse.config.equipments.modules import module
-from eclipse.config.equipments.inverters import inverter
-from eclipse.config.equipments.batteries import battery
+from eclipse.config.equipments import modules
+from eclipse.config.equipments import inverters
+from eclipse.config.equipments import batteries
+
+# Initialize defaults using new API
+module = modules.default()
+inverter = inverters.default()
+battery = batteries.default()
 
 # Modern equipment management - OOP-based
 from eclipse.equipment import (

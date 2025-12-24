@@ -7,7 +7,7 @@ from eclipse.config.equipment_models import MockModule
 # ====================================
 # Jinko JKM400M 54HL4 B
 # ====================================
-Jinko400 = MockModule(
+_Jinko400 = MockModule(
     name="Jinko_JKM400M_54HL4_B",
     power_watts=400.0,
     width_m=1.048, # 1048 mm
@@ -83,7 +83,7 @@ Jinko400 = MockModule(
 # ====================================
 # Longi LR5 72HTH 550M
 # ====================================
-Longi550 = MockModule(
+_Longi550 = MockModule(
     name="Longi_LR5_72HTH_550M",
     power_watts=550.0,
     width_m=1.134, # 1134 mm
@@ -157,7 +157,7 @@ Longi550 = MockModule(
 # ====================================
 # Trina TSM DEG21C 20 550
 # ====================================
-Trina550 = MockModule(
+_Trina550 = MockModule(
     name="Trina_TSM_DEG21C_20_550",
     power_watts=550.0,
     width_m=1.096, # 1096 mm
@@ -229,10 +229,44 @@ Trina550 = MockModule(
 )
 
 MODULE_DB = [
-    Jinko400,
-    Longi550,
-    Trina550,
+    _Jinko400,
+    _Longi550,
+    _Trina550,
 ]
 
-DEFAULT_MODULE = Trina550
-module = DEFAULT_MODULE
+DEFAULT_MODULE = _Trina550
+
+# ==============================================================================
+# Helper Methods (Module-Level Access)
+# Usage:
+#   from eclipse.config.equipments import modules
+#   mod = modules.default()
+#   mod = modules.Jinko400()
+# ==============================================================================
+
+def get_all():
+    """Return list of all available modules."""
+    return MODULE_DB
+
+def list_options():
+    """Print available module models to console."""
+    print("Available Modules:")
+    for m in MODULE_DB:
+        print(f" - {m.name} ({m.power_watts} W)")
+        
+def get(name: str):
+    """Get a module by name (case-insensitive)."""
+    for m in MODULE_DB:
+        if m.name.lower() == name.lower():
+            return m
+    raise ValueError(f"Module '{name}' not found. options: {[m.name for m in MODULE_DB]}")
+
+def default():
+    """Return the default module."""
+    return DEFAULT_MODULE
+
+# Factory wrappers for specific models
+def Jinko400(): return _Jinko400
+def Longi550(): return _Longi550
+def Trina550(): return _Trina550
+

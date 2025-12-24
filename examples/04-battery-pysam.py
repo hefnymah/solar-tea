@@ -17,11 +17,20 @@ import os
 # Ensure root is in path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-from eclipse.config.equipments.batteries import pysam as battery
+from eclipse.config.equipments import batteries
 from eclipse.battery import PySAMBatterySimulator
 from eclipse.synthetic import generate_scenario
 
 
+
+#%%
+# Select battery
+# batteries.list_options()
+battery = batteries.default()
+# or
+# battery = batteries.Tesla_Powerwall_2()
+
+#%%
 print(f"=== Battery Simulation Example ({battery.name}) ===\n")
 
 #%% 1. Setup Data
@@ -42,8 +51,9 @@ print(f"   Annual Load: {total_load_kwh:.0f} kWh")
 print(f"   Annual PV:   {total_pv_kwh:.0f} kWh")
 
 #%% 2. Simulate using OOP interface
+# ...
 chemistry = battery.performance.get('chemistry', 'Unknown') if isinstance(battery.performance, dict) else getattr(battery.performance, 'chemistry', 'Unknown')
-print(f"\n2. Simulating with Battery: {battery.nominal_energy_kwh} kWh, {chemistry}...")
+print(f"\\n2. Simulating with Battery: {battery.nominal_energy_kwh} kWh, {chemistry}...")
 
 # Create simulator instance
 simulator = PySAMBatterySimulator(battery)

@@ -5,7 +5,7 @@ from eclipse.config.equipment_models import MockInverter
 # ====================================
 # SMA SunnyBoy 5.0
 # ====================================
-SMA_SunnyBoy_5_0 = MockInverter(
+_SMA_SunnyBoy_5_0 = MockInverter(
     name="SMA_SunnyBoy_5.0", 
     max_ac_power=5000, 
     mppt_low_v=175, mppt_high_v=500, 
@@ -44,7 +44,7 @@ SMA_SunnyBoy_5_0 = MockInverter(
 # ====================================
 # Huawei SUN2000 10KTL
 # ====================================
-Huawei_SUN2000_10KTL = MockInverter(
+_Huawei_SUN2000_10KTL = MockInverter(
     name="Huawei_SUN2000_10KTL", 
     max_ac_power=10000, 
     mppt_low_v=160, mppt_high_v=950, 
@@ -81,7 +81,7 @@ Huawei_SUN2000_10KTL = MockInverter(
 # ====================================
 # Fronius Symo Gen24 10.0
 # ====================================
-Fronius_Symo_Gen24_10_0 = MockInverter(
+_Fronius_Symo_Gen24_10_0 = MockInverter(
     name="Fronius_Symo_Gen24_10.0", 
     max_ac_power=10000, 
     mppt_low_v=80, mppt_high_v=1000, 
@@ -119,7 +119,7 @@ Fronius_Symo_Gen24_10_0 = MockInverter(
 # ====================================
 # GoodWe GW5000 ES Hybrid
 # ====================================
-GoodWe_GW5000_ES_Hybrid = MockInverter(
+_GoodWe_GW5000_ES_Hybrid = MockInverter(
     name="GoodWe_GW5000_ES_Hybrid", 
     max_ac_power=5000, 
     mppt_low_v=120, mppt_high_v=550, 
@@ -155,7 +155,7 @@ GoodWe_GW5000_ES_Hybrid = MockInverter(
 # ====================================
 # Enphase IQ 8M
 # ====================================
-Enphase_IQ8M = MockInverter(
+_Enphase_IQ8M = MockInverter(
     name="Enphase_IQ8M", 
     max_ac_power=325, 
     mppt_low_v=30, mppt_high_v=45, 
@@ -188,12 +188,48 @@ Enphase_IQ8M = MockInverter(
 )
 
 INVERTER_DB = [
-    SMA_SunnyBoy_5_0,
-    Huawei_SUN2000_10KTL,
-    Fronius_Symo_Gen24_10_0,
-    GoodWe_GW5000_ES_Hybrid,
-    Enphase_IQ8M,
+    _SMA_SunnyBoy_5_0,
+    _Huawei_SUN2000_10KTL,
+    _Fronius_Symo_Gen24_10_0,
+    _GoodWe_GW5000_ES_Hybrid,
+    _Enphase_IQ8M,
 ]
 
-DEFAULT_INVERTER = SMA_SunnyBoy_5_0
-inverter = DEFAULT_INVERTER
+DEFAULT_INVERTER = _SMA_SunnyBoy_5_0
+
+# ==============================================================================
+# Helper Methods (Module-Level Access)
+# Usage:
+#   from eclipse.config.equipments import inverters
+#   inv = inverters.default()
+#   inv = inverters.SMA_SunnyBoy_5_0()
+# ==============================================================================
+
+def get_all():
+    """Return list of all available inverters."""
+    return INVERTER_DB
+
+def list_options():
+    """Print available inverter models to console."""
+    print("Available Inverters:")
+    for i in INVERTER_DB:
+        print(f" - {i.name} ({i.max_ac_power} W)")
+        
+def get(name: str):
+    """Get an inverter by name (case-insensitive)."""
+    for i in INVERTER_DB:
+        if i.name.lower() == name.lower():
+            return i
+    raise ValueError(f"Inverter '{name}' not found. options: {[i.name for i in INVERTER_DB]}")
+
+def default():
+    """Return the default inverter."""
+    return DEFAULT_INVERTER
+
+# Factory wrappers for specific models
+def SMA_SunnyBoy_5_0(): return _SMA_SunnyBoy_5_0
+def Huawei_SUN2000_10KTL(): return _Huawei_SUN2000_10KTL
+def Fronius_Symo_Gen24_10_0(): return _Fronius_Symo_Gen24_10_0
+def GoodWe_GW5000_ES_Hybrid(): return _GoodWe_GW5000_ES_Hybrid
+def Enphase_IQ8M(): return _Enphase_IQ8M
+

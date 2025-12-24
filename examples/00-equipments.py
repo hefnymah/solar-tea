@@ -6,24 +6,19 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 # Module
-from eclipse.config.equipments.modules import module, Jinko400, Longi550, Trina550
+from eclipse.config.equipments import modules
+from eclipse.config.equipments import inverters
+from eclipse.config.equipments import batteries
 
-# Inverter
-from eclipse.config.equipments.inverters import inverter, SMA_SunnyBoy_5_0, Huawei_SUN2000_10KTL, GoodWe_GW5000_ES_Hybrid
+# Select equipments
+module = modules.default()
+# module = modules.Jinko400()
 
-# Battery
-from eclipse.config.equipments.batteries import battery, PySAM_Test_Battery, Tesla_Powerwall_2
+inverter = inverters.default()
+# inverter = inverters.SMA_SunnyBoy_5_0()
 
-#%%
-
-module = module
-module.economics.price_per_unit
-
-inverter = inverter
-inverter.economics
-
-battery = battery
-battery.economics
+battery = batteries.default()
+# battery = batteries.Tesla_Powerwall_2()
 
 #%%
 

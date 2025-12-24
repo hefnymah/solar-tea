@@ -21,9 +21,8 @@ from pvlib.temperature import TEMPERATURE_MODEL_PARAMETERS
 
 from eclipse.config import pv_sizing as settings
 
-from eclipse.config.equipments.modules import module
-from eclipse.config.equipments.inverters import inverter
-from eclipse.config.equipments.batteries import battery
+
+# Equipment imports removed (unused in this file)
 
 @dataclass
 class EnergyProfile:
