@@ -12,11 +12,16 @@ from .system_sizer import (
     SimulationAccessor,
     suggest_module_layout
 )
+from .analyzer import PVSystemAnalyzer, PeriodAnalysis
+from .sizing_utils import SizingUtilities, ScenarioResult
+from .results_formatter import ResultsFormatter
+
 # NOTE: SizingResultPlotter has been moved to eclipse.plotting.pvsim_plotter
 # Import it from: from eclipse.plotting import SizingResultPlotter
 
 __all__ = [
     'kWpSizer', 'EnergyProfile', 'kWpSizingResult', 'size_pv_kwp',
     'PVSystemSizer', 'LocationConfig', 'RoofConfig', 'BatteryConfig', 'SizingResult', 'SimulationAccessor',
-    'suggest_module_layout'
+    'suggest_module_layout', 'PVSystemAnalyzer', 'PeriodAnalysis',
+    'SizingUtilities', 'ScenarioResult', 'ResultsFormatter'
 ]

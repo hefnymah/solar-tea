@@ -11,13 +11,24 @@ Run from the project root:
 
 import sys
 import os
+from pathlib import Path
 
 # Add eclipse module to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from eclipse.pvsim.kwp_sizer import kWpSizer, EnergyProfile, kWpSizingResult, size_pv_kwp
 
+#%%
+# Handle both script and interactive execution
+try:
+    project_root = Path(__file__).parent.parent
+except NameError:
+    project_root = Path.cwd()
+sys.path.insert(0, str(project_root))
 
+output_dir = project_root / "examples" / "outputs" / "example-01"
+os.makedirs(output_dir, exist_ok=True)
+#%%
 print("=" * 60)
 print("kWpSizer Usage Examples")
 print("=" * 60)

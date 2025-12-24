@@ -8,3 +8,4 @@ __pycache__/
 examples/outputs/*
 
 *.egg-info/
+*.png

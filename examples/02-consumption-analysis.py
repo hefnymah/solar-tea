@@ -7,9 +7,19 @@ consumption data from a specific CSV file.
 
 import sys
 import os
+from pathlib import Path
 
-# Ensure project root is in path
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+# Handle both script and interactive execution
+try:
+    project_root = Path(__file__).parent.parent
+except NameError:
+    project_root = Path.cwd()
+sys.path.insert(0, str(project_root))
+
+input_dir  = project_root / "data" / "consumption"
+
+output_dir = project_root / "examples" / "outputs" / "example-02"
+os.makedirs(output_dir, exist_ok=True)
 
 from eclipse.consumption import ConsumptionData
 from eclipse.plotting import ConsumptionPlotter
@@ -17,14 +27,12 @@ from eclipse.plotting import ConsumptionPlotter
 print("=== ConsumptionData ===\n")
 
 # 1. Load a specific file
-file_path = os.path.join(
-    os.path.dirname(__file__), 
-    '..', 'data', 'consumption', 
-    '20251212_consumption-frq-60min-leap-yr.csv'
-)
+DATA_FILE = input_dir / '20251212_consumption-frq-60min-leap-yr.csv'
 
-print(f"1. Loading: {os.path.basename(file_path)}")
-data = ConsumptionData.from_file(file_path)
+#%%
+print(f"1. Loading: {os.path.basename(DATA_FILE.name)}")
+#data = ConsumptionData.from_file(DATA_FILE)
+data = ConsumptionData.load(str(DATA_FILE))
 print(f"   {data}\n")
 
 #%% Load DataFrames
@@ -98,7 +106,6 @@ jan_week_smooth = jan_week.smooth(method='spline', points=500)  # Smoothed DataF
 
 #%% 6. Plotting (optional)
 print("6. Generating Plots...")
-output_dir = os.path.join(os.path.dirname(__file__), 'outputs', 'ex-2')
 
 plotter = ConsumptionPlotter(data, output_dir=output_dir)
 #paths = plotter.plot_all(prefix="demo")
