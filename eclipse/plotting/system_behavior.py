@@ -85,13 +85,13 @@ class PVSystemBehaviorPlotter:
         # ========== Plot 1: Load vs PV Generation ==========
         ax1 = axes[0]
         ax1.plot(analysis.timestamps, analysis.consumption_kwh, label='Consumption', 
-                 color='#004E89', linewidth=1.5)
+                 color='#004E89', linewidth=1.5, drawstyle='steps-post')
         ax1.plot(analysis.timestamps, analysis.pv_kwh, label='PV Production', 
-                 color='#FF6B35', linewidth=1.5, alpha=0.8)
+                 color='#FF6B35', linewidth=1.5, alpha=0.8, drawstyle='steps-post')
         
         # Fill self-consumption area  
         ax1.fill_between(analysis.timestamps, 0, analysis.self_consumed_kwh, 
-                          color='#90EE90', alpha=0.4, label='Self-Consumption')
+                          color='#90EE90', alpha=0.4, label='Self-Consumption', step='post')
         
         # Determine if this is a single day (for better formatting)
         duration_hours = (analysis.period_end - analysis.period_start).total_seconds() / 3600
@@ -113,10 +113,10 @@ class PVSystemBehaviorPlotter:
         
         # Stack plot showing energy breakdown
         ax2.fill_between(analysis.timestamps, 0, analysis.self_consumed_kwh,
-                          color='#90EE90', alpha=0.6, label='Self-Consumed from PV')
+                          color='#90EE90', alpha=0.6, label='Self-Consumed from PV', step='post')
         ax2.fill_between(analysis.timestamps, analysis.self_consumed_kwh, 
                           analysis.consumption_kwh,
-                          color='#FFB6C1', alpha=0.6, label='Grid Import')
+                          color='#FFB6C1', alpha=0.6, label='Grid Import', step='post')
         
         ax2.set_ylabel('Consumption\nBreakdown (kWh)', fontsize=11, fontweight='bold')
         ax2.legend(loc='upper right', fontsize=9)
@@ -127,19 +127,17 @@ class PVSystemBehaviorPlotter:
         
         # Plot net grid flow
         ax3.plot(analysis.timestamps, analysis.net_grid_kwh, label='Net Grid', 
-                 color='#666666', linewidth=1.2)
+                 color='#666666', linewidth=1.2, drawstyle='steps-post')
         
         # Fill import (positive values) in orange
-        ax3.fill_between(analysis.timestamps, analysis.net_grid_kwh, 0, 
-                          where=(analysis.net_grid_kwh > 0), 
+        ax3.fill_between(analysis.timestamps, np.maximum(analysis.net_grid_kwh, 0), 0, 
                           color='#FFB366', alpha=0.5, label='Import',
-                          interpolate=True)
+                          step='post')
         
         # Fill export (negative values) in cyan
-        ax3.fill_between(analysis.timestamps, analysis.net_grid_kwh, 0, 
-                          where=(analysis.net_grid_kwh < 0), 
+        ax3.fill_between(analysis.timestamps, np.minimum(analysis.net_grid_kwh, 0), 0, 
                           color='#66D9EF', alpha=0.5, label='Export',
-                          interpolate=True)
+                          step='post')
         
         ax3.axhline(y=0, color='black', linestyle='--', linewidth=0.8, alpha=0.5)
         ax3.set_ylabel('Grid (kWh)', fontsize=11, fontweight='bold')

@@ -23,7 +23,7 @@ import os
 from typing import Optional, Dict, Any
 
 from eclipse.consumption.data import ConsumptionData, TimeSeriesAccessor, SeasonalAccessor
-from eclipse.plotting import ConsumptionPlotter
+from eclipse.consumption.data import ConsumptionData, TimeSeriesAccessor, SeasonalAccessor
 
 
 class ConsumptionAnalyzer:
@@ -86,7 +86,7 @@ class ConsumptionAnalyzer:
         return self._data
     
     @property
-    def plotter(self) -> Optional[ConsumptionPlotter]:
+    def plotter(self) -> Optional['ConsumptionPlotter']:
         """Returns the underlying ConsumptionPlotter object."""
         return self._plotter
     
@@ -110,6 +110,8 @@ class ConsumptionAnalyzer:
         print(f"Loading: {os.path.basename(file_path)}")
         
         try:
+            from eclipse.plotting import ConsumptionPlotter
+            
             self._data = ConsumptionData.load(file_path)
             
             # Update legacy attributes for backward compatibility

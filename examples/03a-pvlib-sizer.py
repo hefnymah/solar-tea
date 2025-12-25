@@ -14,6 +14,12 @@ Date: 2024-12-23
 import sys
 import os
 from pathlib import Path
+try:
+    project_root = Path(__file__).parent.parent
+except NameError:
+    project_root = Path.cwd()
+
+sys.path.insert(0, str(project_root))
 
 from eclipse.consumption import ConsumptionData
 from eclipse.pvsim import PVSystemSizer, LocationConfig, RoofConfig, PVSystemAnalyzer
@@ -21,12 +27,6 @@ from eclipse.plotting import PVSystemBehaviorPlotter
 
 #%% Project Setting
 # Handle both script and interactive execution
-try:
-    project_root = Path(__file__).parent.parent
-except NameError:
-    project_root = Path.cwd()
-
-sys.path.insert(0, str(project_root))
 
 input_dir  = project_root / "data" / "consumption"
 output_dir = project_root / "examples" / "outputs" / "example-03a"

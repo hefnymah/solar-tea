@@ -9,3 +9,6 @@ examples/outputs/*
 
 *.egg-info/
 *.png
+
+*outputs/*
+examples/archieve/*

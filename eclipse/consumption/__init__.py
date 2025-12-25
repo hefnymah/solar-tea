@@ -27,13 +27,11 @@ Example (Legacy API):
 """
 
 from eclipse.consumption.data import ConsumptionData, TimeSeriesAccessor, SeasonalAccessor
-from eclipse.plotting import ConsumptionPlotter
 from eclipse.consumption.analyzer import ConsumptionAnalyzer
 
 __all__ = [
     'ConsumptionData',
     'TimeSeriesAccessor',
     'SeasonalAccessor',
-    'ConsumptionPlotter',
     'ConsumptionAnalyzer',
 ]

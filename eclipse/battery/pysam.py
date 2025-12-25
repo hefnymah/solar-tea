@@ -39,7 +39,9 @@ class PySAMBatterySimulator(BatterySimulator):
         load_kw: pd.Series, 
         pv_kw: pd.Series,
         system_kwh: Optional[float] = None,
-        system_kw: Optional[float] = None
+        system_kw: Optional[float] = None,
+        min_soc: Optional[float] = None,
+        max_soc: Optional[float] = None
     ) -> pd.DataFrame:
         """
         Run PySAM battery simulation.
@@ -49,6 +51,8 @@ class PySAMBatterySimulator(BatterySimulator):
             pv_kw: PV generation profile in kW
             system_kwh: Override for capacity (default: battery.nominal_energy_kwh)
             system_kw: Override for power limit (default: battery.max_discharge_power_kw)
+            min_soc: Override for minimum SOC (0-100) (default: battery.min_soc)
+            max_soc: Override for maximum SOC (0-100) (default: battery.max_soc)
             
         Returns:
             DataFrame with simulation results
@@ -59,8 +63,8 @@ class PySAMBatterySimulator(BatterySimulator):
         sim_kwh = system_kwh if system_kwh is not None else battery.nominal_energy_kwh
         sim_kw = system_kw if system_kw is not None else battery.max_discharge_power_kw
         sim_volt = battery.nominal_voltage_v
-        sim_min_soc = battery.min_soc
-        sim_max_soc = battery.max_soc
+        sim_min_soc = min_soc if min_soc is not None else battery.min_soc
+        sim_max_soc = max_soc if max_soc is not None else battery.max_soc
         
         # Helper to safely get model_params
         mp = battery.model_params if battery.model_params else {}
@@ -112,6 +116,13 @@ class PySAMBatterySimulator(BatterySimulator):
         cycling_matrix = get_mp('cycling_matrix', None)
         if cycling_matrix:
             batt.ParamsCell.cycling_matrix = cycling_matrix
+        else:
+            # Fallback default if missing (Required by PySAM)
+            # Format: [[DOD%, Cycle#, Cap%], ...]
+            batt.ParamsCell.cycling_matrix = [
+                [0, 0, 100], 
+                [100, 5000, 80]
+            ]
             
         # 5. Thermal & Physical
         batt.ParamsPack.mass = get_mp('mass', 500)
@@ -123,6 +134,14 @@ class PySAMBatterySimulator(BatterySimulator):
         cap_vs_temp = get_mp('cap_vs_temp', None)
         if cap_vs_temp:
             batt.ParamsPack.cap_vs_temp = cap_vs_temp
+        else:
+            # Fallback default (Required by PySAM)
+            # Format: [[Temp (C), Capacity %], ...]
+            batt.ParamsPack.cap_vs_temp = [
+                [-20, 90],
+                [25, 100],
+                [50, 95]
+            ]
             
         # 6. Losses
         batt.ParamsPack.loss_choice = get_mp('loss_choice', 0)
@@ -132,7 +151,24 @@ class PySAMBatterySimulator(BatterySimulator):
 
         # --- Controls ---
         batt.Controls.control_mode = 1.0  # Power control
-        batt.Controls.dt_hr = 1.0  # Hourly time step
+        
+        # Auto-detect time step from input data
+        dt_hours = 1.0
+        if isinstance(load_kw.index, pd.DatetimeIndex) and load_kw.index.freq is not None:
+             # Try to parse frequency
+             try:
+                 # pandas freqstr to hours (e.g. '15T' -> 0.25, 'H' -> 1.0)
+                 timedelt = pd.to_timedelta(load_kw.index.freq)
+                 dt_hours = timedelt.total_seconds() / 3600.0
+             except:
+                 pass
+        
+        # Fallback: check if we can infer from first two points
+        elif len(load_kw.index) > 1 and isinstance(load_kw.index, pd.DatetimeIndex):
+             delta = load_kw.index[1] - load_kw.index[0]
+             dt_hours = delta.total_seconds() / 3600.0
+
+        batt.Controls.dt_hr = dt_hours
         batt.Controls.input_power = 0.0  # Initialize
 
         # --- Simulation Loop ---
