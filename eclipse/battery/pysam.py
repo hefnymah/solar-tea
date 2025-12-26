@@ -212,4 +212,7 @@ class PySAMBatterySimulator(BatterySimulator):
         df['grid_import'] = df['grid_power'].apply(lambda x: x if x > 0 else 0)
         df['grid_export'] = df['grid_power'].apply(lambda x: -x if x < 0 else 0)
         
+        # Store metadata for downstream use (e.g., by BatteryPlotter)
+        df.attrs['battery_kwh'] = sim_kwh
+        
         return df

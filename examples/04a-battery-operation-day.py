@@ -34,16 +34,16 @@ from eclipse.plotting.battery import BatteryPlotter
 # 1. Configuration
 # ==========================================
 
-output_dir = project_root / "examples" / "outputs" / "example-04"
+output_dir = project_root / "examples" / "outputs" / "example-04-battery-operation-day"
 os.makedirs(output_dir, exist_ok=True)
-daily_plot_path = output_dir / "04_daily_verification.png"
+plot_dir = output_dir / "04_daily_verification.png"
 
 
 BATTERY_CAPACITY_KWH = 13.5
 PV_SIZE_KWP = 6.0
 # Increase load to match the "Industrial/Daytime" scale relative to PV
 DAILY_LOAD_KWH = 30.0
-battery_model = batteries.default()
+battery = batteries.default()
 
 #%%
 # ==========================================
@@ -58,7 +58,8 @@ load_kw, pv_kw = generate_scenario(
     daily_load=DAILY_LOAD_KWH,
     pv_size_kwp=PV_SIZE_KWP,
     freq='15min',                  # 15-minute resolution
-    profile_type='industrial'      # Use the blocky industrial shape or 'residential' for smooth shape
+    profile_type='industrial',      # Use the blocky industrial shape or 'residential' for smooth shape
+    include_anomalies=True
 )
 
 # Extract times index for later use
@@ -69,7 +70,7 @@ times = load_kw.index
 # ==========================================
 
 print("Simulating battery...")
-simulator = PySAMBatterySimulator(battery_model)
+simulator = PySAMBatterySimulator(battery)
 results = simulator.simulate(
     load_kw, pv_kw, 
     system_kwh=BATTERY_CAPACITY_KWH,
@@ -82,8 +83,8 @@ results.index = load_kw.index
 # 3. Select Period to Analyze
 # ==========================================
 # Configure the analysis period (can be a single day, week, or month)
-START_DATE = '2024-01-01'  # Start date for analysis
-END_DATE = '2024-01-07'    # End date (same as start = single day)
+START_DATE = '2024-03-01'  # Start date for analysis
+END_DATE = '2024-03-04'    # End date (same as start = single day)
 
 # Alternative examples:
 # Week: START_DATE = '2024-07-01', END_DATE = '2024-07-07'
@@ -102,11 +103,11 @@ print(f"Total Grid Export: {period_df['grid_export'].sum():.2f} kWh")
 # ==========================================
 # 4. Visualization
 # ==========================================
-# Use the new OOP Plotter
+# BatteryPlotter auto-detects battery capacity from simulation results
 plotter = BatteryPlotter()
 
 # Generate operation plot for the selected period
-plotter.plot_operation(period_df, daily_plot_path)
+plotter.plot_operation(period_df, plot_dir)
 
 # Export to CSV
 csv_path = output_dir / "4b_battery_analysis.csv"

@@ -14,20 +14,37 @@ class BatteryPlotter:
     - Precise grid alignment
     """
     
-    def __init__(self):
-        apply_eclipse_style()
+    def __init__(self, battery_kwh: float = None):
+        """
+        Initialize the battery plotter.
         
-    def plot_operation(self, df: pd.DataFrame, output_path: Path, title: str = None):
+        Args:
+            battery_kwh: Battery capacity in kWh. If provided, all plots will show
+                        a secondary Y-axis with absolute SOC in kWh.
+        """
+        apply_eclipse_style()
+        self.battery_kwh = battery_kwh
+        
+    def plot_operation(self, df: pd.DataFrame, output_path: Path, title: str = None, battery_kwh: float = None):
         """
         Generates the standard 2-panel battery operation plot for any time period.
-        Top: SOC (%)
+        Top: SOC (%) with optional secondary axis showing absolute kWh
         Bottom: Power Flow (kW) in Step style
         
         Args:
             df: DataFrame with battery simulation results (must include: soc, load, pv, battery_power, grid_import, grid_export)
             output_path: Path to save the plot
             title: Optional custom title (auto-generated if None)
+            battery_kwh: Override battery capacity for this plot (uses instance value if not provided)
         """
+        # Use provided value, fall back to instance value, then try df.attrs
+        if battery_kwh is not None:
+            pass  # Use provided value
+        elif self.battery_kwh is not None:
+            battery_kwh = self.battery_kwh
+        elif 'battery_kwh' in df.attrs:
+            battery_kwh = df.attrs['battery_kwh']  # Auto-read from simulation results
+        
         # Determine time range for adaptive formatting
         time_range = (df.index[-1] - df.index[0]).total_seconds() / 3600  # hours
         
@@ -56,12 +73,27 @@ class BatteryPlotter:
         ax1.axhline(90, color='green', linestyle='--', alpha=0.5, label='Max (90%)')
         ax1.axhline(10, color='red', linestyle='--', alpha=0.5, label='Min (10%)')
         
-        # Styling
+        # Styling for primary Y-axis (%)
         ax1.set_ylabel("SOC (%)", fontsize=12, fontweight='bold', color='#8e44ad')
         ax1.tick_params(axis='y', labelcolor='#8e44ad')
+        ax1.tick_params(axis='both', which='major', length=6, width=1, direction='out')
         ax1.set_ylim(0, 105)
         ax1.grid(True, alpha=0.3)
-        ax1.legend(loc='upper left')
+        ax1.legend(loc='upper left', frameon=True, facecolor='white', 
+                   edgecolor='black', framealpha=0.9)
+        
+        # Add thick black border around SOC subplot
+        for spine in ax1.spines.values():
+            spine.set_linewidth(1.0)
+            spine.set_color('black')
+        
+        # Add secondary Y-axis for absolute SOC in kWh (if battery_kwh provided)
+        if battery_kwh is not None and battery_kwh > 0:
+            ax1_right = ax1.twinx()
+            # Scale: 0-100% maps to 0-battery_kwh
+            ax1_right.set_ylim(0, battery_kwh * 1.05)  # 5% margin like the % axis
+            ax1_right.set_ylabel("SOC (kWh)", fontsize=12, fontweight='bold', color='#2c3e50')
+            ax1_right.tick_params(axis='y', labelcolor='#2c3e50')
         
         # ==========================================
         # Panel 2: Power Flow (Step Plot)
@@ -96,8 +128,14 @@ class BatteryPlotter:
         
         # Styling
         ax2.set_ylabel("Power (kW)", fontsize=12, fontweight='bold')
+        ax2.tick_params(axis='both', which='major', length=6, width=1, direction='out')
         ax2.grid(True, alpha=0.3)
-        ax2.legend(loc='upper left', ncol=2, frameon=True, fancybox=True)
+        ax2.legend(loc='upper left', ncol=2, frameon=True, fancybox=True, edgecolor='black', framealpha=0.9)
+        
+        # Add thick black border around Power subplot
+        for spine in ax2.spines.values():
+            spine.set_linewidth(1.0)
+            spine.set_color('black')
         
         # Calculate and display statistics
         dt = 0.25  # 15-minute intervals in hours

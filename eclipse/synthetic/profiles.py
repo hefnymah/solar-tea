@@ -171,7 +171,12 @@ def generate_scenario(
     daily_load: float = 20.0,
     pv_size_kwp: float = 8.0,
     freq: str = 'h',
-    profile_type: str = 'residential'
+    profile_type: str = 'residential',
+    include_anomalies: bool = False,
+    anomaly_pv_drop_days: int = 180,     # ~50% of year: cloudy/bad weather days
+    anomaly_load_spike_days: int = 90,   # ~25% of year: high-load days
+    pv_drop_severity: float = 0.7,       # PV reduced to (1 - severity) on cloudy days
+    load_spike_severity: float = 0.5     # Load increased by (1 + severity) on spike days
 ) -> Tuple[pd.Series, pd.Series]:
     """
     Convenience wrapper to generate synchronized profiles for a scenario.
@@ -183,16 +188,49 @@ def generate_scenario(
         pv_size_kwp: PV system size in kWp
         freq: Frequency string (e.g. 'h' for hourly, '15min' for 15-minute)
         profile_type: Load profile type ('residential', 'industrial', 'daytime_peak')
+        include_anomalies: If True, inject realistic random anomalies (cloudy days, load spikes)
+        anomaly_pv_drop_days: Number of days with significantly reduced PV (cloudy/bad weather)
+        anomaly_load_spike_days: Number of days with significantly higher load (events, extreme temps)
+        pv_drop_severity: How much PV drops on cloudy days (0.7 = 70% reduction)
+        load_spike_severity: How much load increases on spike days (0.5 = 50% increase)
     """
     # Calculate number of periods based on frequency
-    # Only support basic pandas frequencies that map to fixed counts easily or just let pandas handle it
-    times = pd.date_range(start=start_date, periods=None, end=pd.Timestamp(start_date) + pd.Timedelta(days=days), freq=freq, inclusive='left', tz='UTC')
-    # Correction: 'periods' with freq is safer if we want exact count, but 'days' implies duration.
-    # Let's use simple date range logic:
     end_date = pd.Timestamp(start_date) + pd.Timedelta(days=days)
     times = pd.date_range(start=start_date, end=end_date, freq=freq, inclusive='left', tz='UTC')
     
     load = generate_load_profile(times, daily_avg_kwh=daily_load, profile_type=profile_type)
     pv = generate_pv_profile(times, kwp=pv_size_kwp)
     
+    # Inject anomalies if requested
+    if include_anomalies and days >= 7:
+        # Get unique days in the dataset
+        unique_days = times.normalize().unique()
+        num_days = len(unique_days)
+        
+        # DETERMINISTIC ALTERNATING PATTERN:
+        # Every other day gets an anomaly (either PV drop OR load spike)
+        # Day 0: Normal, Day 1: PV drop, Day 2: Normal, Day 3: Load spike, Day 4: Normal...
+        cloudy_days = []
+        spike_days = []
+        
+        for i, day in enumerate(unique_days):
+            if i % 2 == 1:  # Odd days get anomalies
+                if (i // 2) % 2 == 0:  # Alternating between PV drop and Load spike
+                    cloudy_days.append(day)
+                else:
+                    spike_days.append(day)
+        
+        # Apply PV drops (cloudy days)
+        for day in cloudy_days:
+            day_mask = times.normalize() == day
+            pv.loc[day_mask] *= (1.0 - pv_drop_severity)
+        
+        # Apply Load spikes
+        for day in spike_days:
+            day_mask = times.normalize() == day
+            load.loc[day_mask] *= (1.0 + load_spike_severity)
+        
+        print(f"   [Anomalies] {len(cloudy_days)} cloudy days, {len(spike_days)} high-load days (alternating pattern)")
+    
     return load, pv
+

@@ -95,52 +95,76 @@ class SimpleBatterySimulator(BatterySimulator):
         min_energy_kwh = capacity_kwh * min_soc_frac
         max_energy_kwh = capacity_kwh * max_soc_frac
         
+        # Calculate timestep in hours (infer from index if possible)
+        if len(df) > 1 and hasattr(df.index, 'freq') and df.index.freq is not None:
+            # Use pd.Timedelta to avoid deprecation warning
+            dt_hours = pd.Timedelta(df.index.freq).total_seconds() / 3600
+        elif len(df) > 1:
+            dt_hours = (df.index[1] - df.index[0]).total_seconds() / 3600
+        else:
+            dt_hours = 0.25  # Default 15 minutes
+        
         for excess in df['excess_kw']:
-            if excess < 0:
+            # Convert power (kW) to energy for this timestep (kWh)
+            excess_energy_kwh = excess * dt_hours
+            
+            if excess_energy_kwh < 0:
                 # Deficit: Need to discharge battery
-                deficit_kw = -excess
+                deficit_kwh = -excess_energy_kwh
                 
-                # Limit by power
-                discharge_request_kw = min(deficit_kw, max_power_kw)
+                # Limit by power (convert power limit to energy for this timestep)
+                max_discharge_kwh = max_power_kw * dt_hours
+                discharge_request_kwh = min(deficit_kwh, max_discharge_kwh)
                 
                 # Energy available for discharge (accounting for efficiency)
                 available_energy_kwh = (soc_kwh - min_energy_kwh) * self.efficiency
                 
                 # Actual discharge
-                actual_discharge_kwh = min(discharge_request_kw, available_energy_kwh)
+                actual_discharge_kwh = min(discharge_request_kwh, available_energy_kwh)
                 
                 # Update SOC (energy removed from battery)
                 energy_removed_kwh = actual_discharge_kwh / self.efficiency
                 soc_kwh = max(min_energy_kwh, soc_kwh - energy_removed_kwh)
                 
                 # Grid import for remaining deficit
-                grid_import_kw = deficit_kw - actual_discharge_kwh
+                grid_import_kwh = deficit_kwh - actual_discharge_kwh
+                grid_export_kwh = 0.0
+                
+                # Convert back to power for logging (kW)
+                battery_power_kw = actual_discharge_kwh / dt_hours  # Positive = Discharge
+                grid_import_kw = grid_import_kwh / dt_hours
                 grid_export_kw = 0.0
                 
-                battery_power_log.append(actual_discharge_kwh)  # Positive = Discharge
+                battery_power_log.append(battery_power_kw)
                 
             else:
                 # Excess: Can charge battery
-                excess_kw = excess
+                excess_kwh = excess_energy_kwh
                 
-                # Limit by power
-                charge_request_kw = min(excess_kw, max_power_kw)
+                # Limit by power (convert power limit to energy for this timestep)
+                max_charge_kwh = max_power_kw * dt_hours
+                charge_request_kwh = min(excess_kwh, max_charge_kwh)
                 
                 # Energy room for charging (accounting for efficiency)
                 room_kwh = (max_energy_kwh - soc_kwh) / self.efficiency
                 
                 # Actual charge
-                actual_charge_kwh = min(charge_request_kw, room_kwh)
+                actual_charge_kwh = min(charge_request_kwh, room_kwh)
                 
                 # Update SOC (energy added to battery, with losses)
                 energy_stored_kwh = actual_charge_kwh * self.efficiency
                 soc_kwh = min(max_energy_kwh, soc_kwh + energy_stored_kwh)
                 
                 # Grid export for remaining excess
-                grid_import_kw = 0.0
-                grid_export_kw = excess_kw - actual_charge_kwh
+                grid_export_kwh = excess_kwh - actual_charge_kwh
+                grid_import_kwh = 0.0
                 
-                battery_power_log.append(-actual_charge_kwh)  # Negative = Charge
+                # Convert back to power for logging (kW)
+                battery_power_kw = -actual_charge_kwh / dt_hours  # Negative = Charge
+                grid_import_kw = 0.0
+                grid_export_kw = grid_export_kwh / dt_hours
+                
+                battery_power_log.append(battery_power_kw)
             
             # Convert SOC to percentage
             soc_pct = (soc_kwh / capacity_kwh) * 100.0
@@ -154,5 +178,8 @@ class SimpleBatterySimulator(BatterySimulator):
         df['grid_import'] = grid_import_log
         df['grid_export'] = grid_export_log
         df['grid_power'] = df['grid_import'] - df['grid_export']
+        
+        # Store metadata for downstream use (e.g., by BatteryPlotter)
+        df.attrs['battery_kwh'] = capacity_kwh
         
         return df

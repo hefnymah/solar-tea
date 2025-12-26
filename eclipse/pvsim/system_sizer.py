@@ -25,7 +25,7 @@ Example Usage:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Optional, Dict, Any, TYPE_CHECKING
+from typing import Optional, Dict, Any, TYPE_CHECKING, Union
 import pandas as pd
 import numpy as np
 
@@ -168,30 +168,60 @@ class RoofConfig:
 @dataclass(frozen=True)
 class BatteryConfig:
     """
-    Immutable battery configuration for energy storage.
+    Battery configuration for energy storage.
+    
+    Two modes:
+    1. Auto-size (default): Capacity determined by BatterySizer after PV simulation
+    2. Manual: Specify capacity_kwh and power_kw explicitly
+    
+    Example:
+        # Auto-size (recommended)
+        battery = BatteryConfig(max_soc=90, min_soc=10, simulator='simple')
+        
+        # Manual
+        battery = BatteryConfig(capacity_kwh=13.5, power_kw=5.0, max_soc=90, min_soc=10)
     
     Attributes:
-        capacity_kwh: Battery capacity in kWh.
-        power_kw: Maximum charge/discharge power in kW.
+        capacity_kwh: Battery capacity in kWh (None = auto-size).
+        power_kw: Max charge/discharge power in kW (None = derive from capacity at 0.5C).
         efficiency: Round-trip efficiency (default: 0.95 = 95%).
-        min_soc_pct: Minimum state of charge percentage (default: 10%).
-        max_soc_pct: Maximum state of charge percentage (default: 100%).
+        min_soc: Minimum state of charge percentage (default: 10%).
+        max_soc: Maximum state of charge percentage (default: 90%).
+        sizing_target: Target for auto-sizing: 'optimal', 'autonomy', 'self_sufficiency'.
+        simulator: Simulator backend: 'simple' (fast) or 'pysam' (accurate).
     """
-    capacity_kwh: float
-    power_kw: float
+    # Manual mode (optional - None means auto-size)
+    capacity_kwh: Optional[float] = None
+    power_kw: Optional[float] = None
+    
+    # Common settings
     efficiency: float = 0.95
-    min_soc_pct: float = 10.0
-    max_soc_pct: float = 100.0
+    min_soc: float = 10.0
+    max_soc: float = 90.0
+    
+    # Auto-sizing settings
+    sizing_target: str = 'optimal'
+    simulator: str = 'simple'
+    
+    @property
+    def auto_size(self) -> bool:
+        """Returns True if capacity should be auto-determined."""
+        return self.capacity_kwh is None
     
     def __post_init__(self):
-        if self.capacity_kwh <= 0:
+        # Validate only if manual mode
+        if self.capacity_kwh is not None and self.capacity_kwh <= 0:
             raise ValueError(f"capacity_kwh must be positive, got {self.capacity_kwh}")
-        if self.power_kw <= 0:
+        if self.power_kw is not None and self.power_kw <= 0:
             raise ValueError(f"power_kw must be positive, got {self.power_kw}")
         if not 0 < self.efficiency <= 1:
             raise ValueError(f"efficiency must be between 0 and 1, got {self.efficiency}")
-        if not 0 <= self.min_soc_pct < self.max_soc_pct <= 100:
-            raise ValueError(f"Invalid SOC range: min={self.min_soc_pct}, max={self.max_soc_pct}")
+        if not 0 <= self.min_soc < self.max_soc <= 100:
+            raise ValueError(f"Invalid SOC range: min={self.min_soc}, max={self.max_soc}")
+        if self.sizing_target not in ('optimal', 'autonomy', 'self_sufficiency', 'self_consumption'):
+            raise ValueError(f"Invalid sizing_target: {self.sizing_target}")
+        if self.simulator not in ('simple', 'pysam'):
+            raise ValueError(f"Invalid simulator: {self.simulator}")
 
 
 @dataclass(frozen=True)
@@ -463,7 +493,7 @@ class PVSystemSizer:
         consumption_data: 'ConsumptionData',
         location: LocationConfig,
         roof: RoofConfig,
-        battery_config: Optional[BatteryConfig] = None
+        battery: Optional[BatteryConfig] = None
     ):
         """
         Initialize PV system sizer.
@@ -472,49 +502,118 @@ class PVSystemSizer:
             consumption_data: ConsumptionData object with hourly consumption.
             location: Location configuration.
             roof: Roof configuration.
-            battery_config: Optional battery configuration for storage simulation.
+            battery: Optional battery configuration for storage simulation.
+                     If battery.auto_size=True, BatterySizer.recommend() is called
+                     internally after PV simulation.
         """
         self._consumption_data = consumption_data
         self._location = location
         self._roof = roof
-        self._battery_config = battery_config
+        
+        # Handle battery=True shorthand
+        if battery is True:
+            self._battery = BatteryConfig()  # Use defaults with auto-sizing
+        else:
+            self._battery = battery
+        
+        # For backward compatibility
+        self._battery_config = self._battery
         
         # Lazy-loaded simulation accessor
         self._simulation: Optional[SimulationAccessor] = None
     
-    def simulate(self, pv_kwp: float, battery_kwh: float = 0.0) -> 'SizingResult':
+    def simulate(self, pv_sizing: Union[str, float] = 'max_roof') -> 'SizingResult':
         """
         Run physics simulation for given PV and battery configuration.
         
-        This is the primary interface for the optimization module.
-        Returns a full SizingResult with all metrics calculated.
-        
         Args:
-            pv_kwp: PV system size in kWp.
-            battery_kwh: Battery capacity in kWh (default: 0 = no battery).
+            pv_sizing: PV sizing mode:
+                - 'max_roof': Use maximum roof capacity (default)
+                - 'match_load': Size to match annual consumption
+                - float: Explicit kWp value
             
         Returns:
             SizingResult with all performance metrics.
         """
-        # Create temporary battery config if battery_kwh > 0
-        if battery_kwh > 0:
-            temp_battery = BatteryConfig(
-                capacity_kwh=battery_kwh,
-                power_kw=min(battery_kwh / 2, 10.0),  # C-rate 0.5
-                efficiency=0.95
-            )
-            # Temporarily set battery config
-            original_config = self._battery_config
-            self._battery_config = temp_battery
-            result = self._calculate_result(pv_kwp, constrained=False)
-            self._battery_config = original_config
-            return result
-        else:
-            # No battery - use instance config or none
-            if self._battery_config is not None:
-                return self._calculate_result(pv_kwp, constrained=False)
+        # Resolve PV size
+        if isinstance(pv_sizing, str):
+            if pv_sizing == 'max_roof':
+                pv_kwp = self._roof.max_area_m2 * self._roof.module_efficiency
+            elif pv_sizing == 'match_load':
+                pv_kwp = self._calculate_kwp_for_load_match()
             else:
+                raise ValueError(f"Unknown pv_sizing mode: {pv_sizing}. Use 'max_roof', 'match_load', or a float.")
+        else:
+            pv_kwp = float(pv_sizing)
+        
+        # If battery is configured with auto-sizing, run BatterySizer
+        battery_kwh = 0.0
+        if self._battery is not None:
+            if self._battery.auto_size:
+                # Run PV simulation first to get hourly data
+                hourly_pv = self.simulation.scale_to_capacity(pv_kwp)
+                hourly_load = self._consumption_data.hourly.series
+                daily_load = self._consumption_data.daily.mean()
+                
+                # Import and use BatterySizer
+                from eclipse.battery import BatterySizer
+                
+                battery_sizer = BatterySizer(
+                    pv_kwp=pv_kwp,
+                    daily_load_kwh=daily_load,
+                    max_soc=self._battery.max_soc,
+                    min_soc=self._battery.min_soc,
+                    simulator=self._battery.simulator
+                )
+                
+                sizing_result = battery_sizer.recommend(
+                    load_kw=hourly_load,
+                    pv_kw=hourly_pv,
+                    target=self._battery.sizing_target
+                )
+                
+                battery_kwh = sizing_result.recommended_kwh
+                print(f"    🔋 Auto-sized battery: {battery_kwh:.1f} kWh ({self._battery.sizing_target})")
+                
+                # Create temp config with determined capacity for simulation
+                temp_battery = BatteryConfig(
+                    capacity_kwh=battery_kwh,
+                    power_kw=battery_kwh * 0.5,  # 0.5C rate
+                    efficiency=self._battery.efficiency,
+                    min_soc=self._battery.min_soc,
+                    max_soc=self._battery.max_soc
+                )
+                original = self._battery_config
+                self._battery_config = temp_battery
+                result = self._calculate_result(pv_kwp, constrained=False)
+                self._battery_config = original
+                return result
+            else:
+                # Manual mode - use specified capacity
+                battery_kwh = self._battery.capacity_kwh
                 return self._calculate_result(pv_kwp, constrained=False)
+        else:
+            # No battery
+            return self._calculate_result(pv_kwp, constrained=False)
+    
+    def _calculate_kwp_for_load_match(self) -> float:
+        """
+        Calculate PV capacity needed to match annual consumption.
+        
+        Uses specific yield (kWh/kWp/year) from simulation to determine
+        the system size that produces roughly equal to annual consumption.
+        """
+        annual_consumption = self._consumption_data.hourly.sum()
+        
+        # Get expected specific yield (kWh per kWp per year)
+        # Use simulation accessor to get a reference 1 kWp yield
+        reference_yield = self.simulation.scale_to_capacity(1.0).sum()  # kWh for 1 kWp
+        
+        if reference_yield > 0:
+            return annual_consumption / reference_yield
+        else:
+            # Fallback: assume 1000 kWh/kWp/year
+            return annual_consumption / 1000
     
     @property
     def simulation(self) -> SimulationAccessor:
@@ -1073,8 +1172,8 @@ class PVSystemSizer:
                 nominal_energy_kwh=self._battery_config.capacity_kwh,
                 max_charge_power_kw=self._battery_config.power_kw,
                 max_discharge_power_kw=self._battery_config.power_kw,
-                min_soc=self._battery_config.min_soc_pct,
-                max_soc=self._battery_config.max_soc_pct
+                min_soc=self._battery_config.min_soc,
+                max_soc=self._battery_config.max_soc
             )
             
             # Run simulation with efficiency override

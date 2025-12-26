@@ -46,7 +46,7 @@ print("PV SYSTEM ROOF-BASED SIZING - CLEAN OOP ARCHITECTURE")
 print("=" * 70)
 
 # 1. Load consumption data
-DATA_FILE = input_dir / "20251212_consumption-frq-60min-leap-yr.csv"
+DATA_FILE = input_dir / "20251212_consumption-frq-15min-leap-yr.csv"
 print(f"\n>>> Loading consumption data: {DATA_FILE.name}")
 data = ConsumptionData.load(str(DATA_FILE))
 print(f"   {data}\n")
@@ -61,15 +61,34 @@ max_kwp = roof_area_m2 * module_efficiency
 print(f"\n   → Maximum PV capacity: {max_kwp:.2f} kWp")
 
 #%% 3. Simulate PV system at maximum capacity
-location = LocationConfig(latitude=latitude, longitude=longitude)
-roof = RoofConfig(tilt=roof_tilt, azimuth=roof_azimuth, max_area_m2=roof_area_m2)
+location = LocationConfig(
+    latitude=latitude, 
+    longitude=longitude,
+    altitude=400,
+    timezone='Europe/Zurich'
+)
 
-sizer = PVSystemSizer(data, location, roof)
+roof = RoofConfig(
+    tilt=roof_tilt, 
+    azimuth=roof_azimuth, 
+    max_area_m2=roof_area_m2,
+    module_efficiency=module_efficiency,
+    performance_ratio=0.75
+)
+
+sizer = PVSystemSizer(
+    consumption_data=data,
+    location=location,
+    roof=roof,
+    battery_config=None    
+)
 
 print("\n" + "=" * 70)
 print("SIMULATING PV SYSTEM")
 print("=" * 70)
 print(f"\n🔬 Running simulation for {max_kwp:.2f} kWp system...")
+
+print(f"   {sizer}\n")
 
 result = sizer.simulate(pv_kwp=max_kwp, battery_kwh=0.0)
 
