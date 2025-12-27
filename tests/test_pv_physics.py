@@ -13,8 +13,8 @@ import pytest
 import pandas as pd
 import numpy as np
 from datetime import datetime
-from eclipse.pvsim import LocationConfig, RoofConfig, PVSystemSizer
-from eclipse.pvsim.system_sizer import SimulationAccessor
+from eclipse.simulation import LocationConfig, RoofConfig, PVSystemSizer
+from eclipse.simulation.system_sizer import SimulationAccessor
 from eclipse.consumption import ConsumptionData
 
 @pytest.fixture

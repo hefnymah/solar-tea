@@ -13,7 +13,7 @@ Tests:
 import pytest
 import pandas as pd
 import numpy as np
-from eclipse.pvsim import PVSystemSizer, LocationConfig, RoofConfig, BatteryConfig
+from eclipse.simulation import PVSystemSizer, LocationConfig, RoofConfig, BatteryConfig
 from eclipse.consumption import ConsumptionData
 
 @pytest.fixture

@@ -181,11 +181,11 @@ Adding a battery system transforms your energy independence:
 
 ## 🔮 Future: Battery Integration
 
-The `eclipse.pvsim` module is designed to support battery sizing in future versions:
+The `eclipse.simulation` module is designed to support battery sizing in future versions:
 
 ```python
 # Future API (planned)
-from eclipse.pvsim import PVSystemSizer
+from eclipse.simulation import PVSystemSizer
 
 result = sizer.size_with_battery(
     target_self_sufficiency=80,

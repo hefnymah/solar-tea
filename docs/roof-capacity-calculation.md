@@ -18,7 +18,7 @@ max_capacity_kwp = roof_area_m² × module_efficiency
 ## Calculation Example
 
 ```python
-from eclipse.pvsim import RoofConfig
+from eclipse.simulation import RoofConfig
 
 roof = RoofConfig(
     tilt=30,                # 30° tilt

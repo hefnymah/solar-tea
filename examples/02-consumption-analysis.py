@@ -71,10 +71,8 @@ print(seasonal_profile)
 winter_hourly  = data.seasons.winter.dataframe
 winter_daily   = winter_hourly.resample('D').sum()  # Daily totals
 winter_weekly  = winter_daily.resample('W').sum()   # Weekly totals
-winter_monthly = winter_daily.resample('M').sum()   # Monthly totals
-winter_monthly = winter_daily.resample('ME').sum()  # ME is Monthly End   
-winter_annual  = winter_daily.resample('Y').sum()   # Annual totals
-winter_annual  = winter_daily.resample('YE').sum()   # YE is Year End
+winter_monthly = winter_daily.resample('ME').sum()  # Monthly totals
+winter_annual  = winter_daily.resample('YE').sum()   # Annual totals
 
 #%% Get a typical week for a season (new method!)
 

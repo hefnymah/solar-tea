@@ -16,7 +16,7 @@ from pathlib import Path
 # Add eclipse module to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from eclipse.pvsim.kwp_sizer import kWpSizer, EnergyProfile, kWpSizingResult, size_pv_kwp
+from eclipse.simulation import kWpSizer, EnergyProfile, kWpSizingResult, size_pv_kwp
 
 #%%
 # Handle both script and interactive execution

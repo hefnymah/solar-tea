@@ -21,7 +21,7 @@ except NameError:
 sys.path.insert(0, str(project_root))
 
 from eclipse.consumption import ConsumptionData
-from eclipse.pvsim import PVSystemSizer, LocationConfig, RoofConfig
+from eclipse.simulation import PVSystemSizer, LocationConfig, RoofConfig, BatteryConfig
 
 print("=== ULTIMATE: Joint PV + Battery Optimization ===\n")
 

@@ -11,7 +11,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
-    from eclipse.pvsim.system_sizer import PVSystemSizer
+    from eclipse.simulation.system_sizer import SizingResult
 
 
 class ObjectiveFunction(ABC):

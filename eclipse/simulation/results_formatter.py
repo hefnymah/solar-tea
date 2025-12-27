@@ -15,8 +15,8 @@ from __future__ import annotations
 from typing import List, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from eclipse.pvsim.system_sizer import SizingResult
-    from eclipse.pvsim.sizing_utils import ScenarioResult
+    from eclipse.simulation.system_sizer import SizingResult
+    from eclipse.simulation.sizing_utils import ScenarioResult
 
 
 class ResultsFormatter:

@@ -26,7 +26,7 @@ from eclipse.equipment import (
 )
 
 # Modern PV simulation - OOP-based
-from eclipse.pvsim import PVSystemSizer, LocationConfig, RoofConfig, suggest_module_layout
+from eclipse.simulation import PVSystemSizer, LocationConfig, RoofConfig, suggest_module_layout
 from eclipse.consumption import ConsumptionData
 
 from eclipse.synthetic import generate_load_profile

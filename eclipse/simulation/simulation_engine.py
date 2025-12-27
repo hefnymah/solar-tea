@@ -37,7 +37,7 @@ class SimulationConfig:
     inverter_efficiency: float = 0.96
     system_loss: float = 0.14 # 14% system loss typically
 
-class PVSimulationEngine:
+class SimulationEngine:
     """
     Robust engine for generating PV profiles aligned to specific time indexes.
     """
@@ -170,7 +170,7 @@ class PVSimulationEngine:
 load_profile = pd.read_csv('consumption_15min_leap.csv', parse_dates=True, index_col=0)
 
 # Initialize Engine
-engine = PVSimulationEngine(config=SimulationConfig(lat=47.3, lon=8.5, timezone='Europe/Zurich'))
+engine = SimulationEngine(config=SimulationConfig(lat=47.3, lon=8.5, timezone='Europe/Zurich'))
 system = engine.create_system(tilt=30, azimuth=180, capacity_kwp=5.0)
 
 # Simulate EXACTLY matching the load profile index

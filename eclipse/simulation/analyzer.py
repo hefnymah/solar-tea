@@ -18,7 +18,7 @@ import pandas as pd
 from dataclasses import dataclass
 
 if TYPE_CHECKING:
-    from eclipse.pvsim.system_sizer import SizingResult
+    from eclipse.simulation.system_sizer import SimulationAccessor
 
 
 @dataclass
@@ -220,7 +220,7 @@ class PVSystemAnalyzer:
             DataFrame with monthly totals for consumption, PV, self-consumed,
             grid import, and grid export.
         """
-        monthly = self.hourly_data.resample('M').sum()
+        monthly = self.hourly_data.resample('ME').sum()
         
         return pd.DataFrame({
             'consumption': monthly['Consumption_kWh'],

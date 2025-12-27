@@ -20,7 +20,7 @@ solar-tea/
 │   ├── consumption/            # Load profile handling
 │   │   ├── data.py            # ConsumptionData class
 │   │   └── plotter.py         # Visualization
-│   ├── pvsim/                  # PV system simulation
+│   ├── simulation/             # PV system simulation
 │   │   ├── system_sizer.py    # PVSystemSizer class
 │   │   │                      # (plotter moved to eclipse/plotting/)
 │   │   └── configs.py         # Location, Roof, Battery configs
@@ -69,7 +69,7 @@ pip install -e ".[all]"           # Everything
 
 ```python
 from eclipse.consumption import ConsumptionData
-from eclipse.pvsim import PVSystemSizer, LocationConfig, RoofConfig
+from eclipse.simulation import PVSystemSizer, LocationConfig, RoofConfig
 
 # Load consumption data
 data = ConsumptionData.load("data/consumption/hourly.csv")

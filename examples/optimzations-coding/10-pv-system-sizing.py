@@ -13,7 +13,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from eclipse.consumption import ConsumptionData
-from eclipse.pvsim import PVSystemSizer, LocationConfig, RoofConfig
+from eclipse.simulation import PVSystemSizer, LocationConfig, RoofConfig
 
 print("=== PV System Sizing Example ===\n")
 

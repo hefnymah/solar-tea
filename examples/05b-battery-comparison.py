@@ -25,7 +25,7 @@ except NameError:
 sys.path.insert(0, str(project_root))
 
 from eclipse.consumption import ConsumptionData
-from eclipse.pvsim import (
+from eclipse.simulation import (
     PVSystemSizer, LocationConfig, RoofConfig, BatteryConfig
 )
 
@@ -115,7 +115,7 @@ print("=" * 70)
 sizer_with_battery = PVSystemSizer(data, location, roof, battery=battery)
 
 # Use the same explicit kWp value
-print(f"\n🔬 Simulating {PV_SIZE_KWP} kWp PV system + auto-sized battery...")
+print(f"\n Simulating {PV_SIZE_KWP} kWp PV system + auto-sized battery...")
 result_with_battery = sizer_with_battery.simulate(pv_sizing=PV_SIZE_KWP)
 
 print(f"""

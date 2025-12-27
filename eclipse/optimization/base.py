@@ -13,7 +13,7 @@ from typing import Optional, Callable, Any, TYPE_CHECKING
 import pandas as pd
 
 if TYPE_CHECKING:
-    from eclipse.pvsim.results import SizingResult
+    from eclipse.simulation.system_sizer import PVSystemSizer, SizingResult
 
 
 @dataclass(frozen=True)

@@ -14,7 +14,7 @@ import matplotlib.dates as mdates
 import numpy as np
 
 if TYPE_CHECKING:
-    from eclipse.pvsim.system_sizer import SizingResult
+    from eclipse.simulation.system_sizer import SizingResult
 
 
 class SizingResultPlotter:

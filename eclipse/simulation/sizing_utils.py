@@ -16,7 +16,8 @@ from typing import List, Optional, TYPE_CHECKING
 from dataclasses import dataclass
 
 if TYPE_CHECKING:
-    from eclipse.pvsim.system_sizer import PVSystemSizer, SizingResult
+    # from eclipse.simulation.system_sizer import PVSystemSizer (circular import)
+    from eclipse.simulation.system_sizer import SizingResult
 
 
 @dataclass
@@ -157,7 +158,7 @@ class SizingUtilities:
         """
         results = []
         for size in sizes:
-            result = sizer.simulate(pv_kwp=size, battery_kwh=battery_kwh)
+            result = sizer.simulate(pv_sizing=size)
             results.append(ScenarioResult(size_kwp=size, result=result))
         return results
     

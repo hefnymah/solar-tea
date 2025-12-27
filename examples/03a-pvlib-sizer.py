@@ -22,7 +22,7 @@ except NameError:
 sys.path.insert(0, str(project_root))
 
 from eclipse.consumption import ConsumptionData
-from eclipse.pvsim import PVSystemSizer, LocationConfig, RoofConfig, PVSystemAnalyzer
+from eclipse.simulation import PVSystemSizer, LocationConfig, RoofConfig, PVSystemAnalyzer
 from eclipse.plotting import PVSystemBehaviorPlotter
 
 #%% Project Setting

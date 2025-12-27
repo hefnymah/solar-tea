@@ -12,7 +12,7 @@ This package provides domain-specific plotters:
 """
 
 from .consumption import ConsumptionPlotter
-from .pvsim_plotter import SizingResultPlotter
+from .sizing_results import SizingResultPlotter
 from .system_behavior import PVSystemBehaviorPlotter
 from .battery import BatteryPlotter
 

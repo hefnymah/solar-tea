@@ -8,7 +8,9 @@ accurate generation simulation.
 
 Example Usage:
     from eclipse.consumption import ConsumptionData
-    from eclipse.pvsim import PVSystemSizer, LocationConfig, RoofConfig
+    from eclipse.simulation.sizing_utils import KwPSizer
+    from eclipse.simulation.simulation_engine import SimulationEngine
+    # from eclipse.simulation.analyzer import PVAnalyzer  # deferred import to avoid circular dependency
     
     data = ConsumptionData.load("consumption.csv")
     sizer = PVSystemSizer(
@@ -300,7 +302,7 @@ class SizingResult:
         Returns:
             Path to saved figure if output_path provided, else None.
         """
-        from eclipse.plotting.pvsim_plotter import SizingResultPlotter
+        from eclipse.plotting.sizing_results import SizingResultPlotter
         plotter = SizingResultPlotter(self)
         return plotter.plot_monthly_comparison(output_path, figsize, show_self_consumed)
     
@@ -321,7 +323,7 @@ class SizingResult:
         Returns:
             Path to saved figure if output_path provided, else None.
         """
-        from eclipse.plotting.pvsim_plotter import SizingResultPlotter
+        from eclipse.plotting.sizing_results import SizingResultPlotter
         plotter = SizingResultPlotter(self)
         return plotter.plot_seasonal_daily_production(output_path, figsize)
     
@@ -344,7 +346,7 @@ class SizingResult:
         Returns:
             Path to saved figure if output_path provided, else None.
         """
-        from eclipse.plotting.pvsim_plotter import SizingResultPlotter
+        from eclipse.plotting.sizing_results import SizingResultPlotter
         plotter = SizingResultPlotter(self)
         return plotter.plot_battery_soc(output_path, figsize, days_to_show)
 

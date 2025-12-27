@@ -18,7 +18,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from eclipse.consumption import ConsumptionData
-from eclipse.pvsim import PVSystemSizer, LocationConfig, RoofConfig
+from eclipse.simulation import PVSystemSizer, LocationConfig, RoofConfig, BatteryConfig
 
 print("=== Automatic PV + Battery System Optimization ===\n")
 
@@ -103,7 +103,7 @@ print("STEP 3: Final Optimized System")
 print("=" * 70)
 
 # Create final system with optimized battery
-from eclipse.pvsim import BatteryConfig
+from eclipse.simulation import BatteryConfig
 
 if optimal_battery['optimal_kwh'] > 0:
     battery_config = BatteryConfig(
@@ -112,7 +112,7 @@ if optimal_battery['optimal_kwh'] > 0:
         efficiency=0.95
     )
     
-    sizer_optimized = PVSystemSizer(data, location, roof, battery_config=battery_config)
+    sizer_optimized = PVSystemSizer(data, location, roof, battery=battery_config)
     result_optimized = sizer_optimized.size_for_self_sufficiency(target_percent=target_self_sufficiency)
     
     print(f"\nOptimized PV + Battery System:")

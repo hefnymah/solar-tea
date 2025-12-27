@@ -24,10 +24,13 @@ except NameError:
 sys.path.insert(0, str(project_root))
 
 from eclipse.consumption import ConsumptionData
-from eclipse.pvsim import (
-    PVSystemSizer, LocationConfig, RoofConfig, BatteryConfig
+from eclipse.simulation import (
+    PVSystemSizer,
+    LocationConfig,
+    RoofConfig,
+    BatteryConfig
 )
-
+from eclipse.simulation.simulation_engine import SimulationEngine
 # ==========================================
 # CONFIGURATION
 # ==========================================
@@ -97,7 +100,7 @@ sizer = PVSystemSizer(
 
 # Run simulation with PV sizing mode
 # Options: 'max_roof', 'match_load', or explicit kWp value
-print(f"\n🔬 Sizing PV to fill roof ({roof.max_area_m2} m²)...")
+print(f"\n Sizing PV to fill roof ({roof.max_area_m2} m²)...")
 result = sizer.simulate(pv_sizing='max_roof')
 
 # ==========================================
@@ -197,7 +200,7 @@ print("\n" + "=" * 70)
 print("GENERATING VISUALIZATIONS")
 print("=" * 70)
 
-from eclipse.pvsim import PVSystemAnalyzer
+from eclipse.simulation import PVSystemAnalyzer
 from eclipse.plotting import PVSystemBehaviorPlotter, BatteryPlotter
 
 # --- PV System Analysis ---

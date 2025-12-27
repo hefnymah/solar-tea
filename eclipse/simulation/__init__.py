@@ -16,7 +16,7 @@ from .analyzer import PVSystemAnalyzer, PeriodAnalysis
 from .sizing_utils import SizingUtilities, ScenarioResult
 from .results_formatter import ResultsFormatter
 
-# NOTE: SizingResultPlotter has been moved to eclipse.plotting.pvsim_plotter
+# NOTE: SizingResultPlotter has been moved to eclipse.plotting.sizing_results
 # Import it from: from eclipse.plotting import SizingResultPlotter
 
 __all__ = [

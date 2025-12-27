@@ -20,9 +20,11 @@ import numpy as np
 from scipy.interpolate import make_interp_spline
 
 try:
-    from eclipse.pvsim.analyzer import PeriodAnalysis
+    from eclipse.simulation.analyzer import PeriodAnalysis
+    from eclipse.simulation.system_sizer import SizingResult
 except ImportError:
     PeriodAnalysis = None  # For type hints only
+    SizingResult = None # For type hints only
 
 
 class PVSystemBehaviorPlotter:
@@ -36,7 +38,7 @@ class PVSystemBehaviorPlotter:
     - Can be reused for any similar data structure
     
     Example:
-        >>> from eclipse.pvsim import PVSystemAnalyzer
+        >>> from eclipse.simulation.analyzer import PVSystemAnalyzer
         >>> from eclipse.plotting import PVSystemBehaviorPlotter
         >>> 
         >>> # Step 1: Process data (business logic)
