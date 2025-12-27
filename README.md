@@ -16,33 +16,69 @@ A comprehensive Python-based tool for sizing Solar PV systems and Batteries, spe
 
 ```
 solar-tea/
-├── eclipse/                    # Main package
-│   ├── consumption/            # Load profile handling
-│   │   ├── data.py            # ConsumptionData class
-│   │   └── plotter.py         # Visualization
-│   ├── simulation/             # PV system simulation
-│   │   ├── system_sizer.py    # PVSystemSizer class
-│   │   │                      # (plotter moved to eclipse/plotting/)
-│   │   └── configs.py         # Location, Roof, Battery configs
-│   ├── battery/                # Battery simulation
-│   │   ├── simple.py          # SimpleBatterySimulator
-│   │   └── pysam.py           # PySAM integration
-│   ├── optimization/           # 🆕 Optimization module
-│   │   ├── base.py            # Abstract Optimizer class
-│   │   ├── objectives.py      # Objective functions
-│   │   └── sweep.py           # SweepOptimizer
-│   └── config/                 # Equipment configurations
-├── examples/                   # Usage examples
-│   ├── 10-pv-system-sizing.py # Basic PV sizing
-│   ├── 11-pv-battery-sizing.py# PV + battery demo
-│   ├── 12-auto-pv-battery-optimization.py
-│   ├── 13-ultimate-pv-battery-optimization.py
-│   └── 14-optimization-module-demo.py  # 🆕 OOP demo
-├── docs/                       # Documentation
-├── tests/                      # Unit tests
-└── data/                       # Sample data files
+├── eclipse/                                     # Main package
+│   ├── consumption/                             # Load profile handling
+│   │   ├── data.py                              # ConsumptionData class
+│   │   └── plotter.py                           # Visualization
+│   ├── simulation/                              # PV system simulation
+│   │   ├── system_sizer.py                      # PVSystemSizer class
+│   │   └── configs.py                           # Location, Roof, Battery configs
+│   ├── battery/                                 # Battery simulation
+│   │   ├── simple.py                            # SimpleBatterySimulator
+│   │   └── pysam.py                             # PySAM integration
+│   ├── economics/                             # Economics module
+│   │   ├── __init__.py                        # Public API exports
+│   │   ├── enums.py                           # All Enum definitions
+│   │   ├── config.py                          # Dataclass configurations
+│   │   ├── defaults.py                        # Swiss market defaults registry
+│   │   ├── capex/
+│   │   │   ├── __init__.py
+│   │   │   └── calculator.py                  # CAPEX calculation logic
+│   │   ├── opex/
+│   │   │   ├── __init__.py
+│   │   │   └── calculator.py                  # OPEX/maintenance logic
+│   │   ├── subsidies/
+│   │   │   ├── __init__.py
+│   │   │   ├── base.py                        # Abstract subsidy interface
+│   │   │   └── che_pronovo.py                 # Swiss Pronovo implementation
+│   │   └── analysis/
+│   │       ├── __init__.py
+│   │       └── cashflow.py                    # NPV, IRR, payback calculations
+│   └── plotting/                              # Plotting module
+│       ├── __init__.py                        # Public API exports
+│       ├── enums.py                           # All Enum definitions
+│       ├── config.py                          # Dataclass configurations
+│       ├── defaults.py                        # Swiss market defaults registry
+│       ├── capex/
+│       │   ├── __init__.py
+│       │   └── calculator.py                  # CAPEX calculation logic
+│       ├── opex/
+│       │   ├── __init__.py
+│       │   └── calculator.py                  # OPEX/maintenance logic
+│       ├── subsidies/
+│       │   ├── __init__.py
+│       │   ├── base.py                        # Abstract subsidy interface
+│       │   └── che_pronovo.py                 # Swiss Pronovo implementation
+│       └── analysis/
+│           ├── __init__.py
+│           └── cashflow.py                    # NPV, IRR, payback calculations
+│   ├── optimization/                            # Optimization module
+│   │   ├── base.py                              # Abstract Optimizer class
+│   │   ├── objectives.py                        # Objective functions
+│   │   └── sweep.py                             # SweepOptimizer (OOP demo)
+│   └── config/                                  # Equipment configurations
+├── examples/                                    # Usage examples
+│   ├── 10-pv-system-sizing.py                   # Basic PV sizing
+│   ├── 11-pv-battery-sizing.py                  # PV + battery demo
+│   ├── 12-auto-pv-battery-optimization.py       # Auto optimization demo
+│   ├── 13-ultimate-pv-battery-optimization.py   # Ultimate optimization demo
+│   └── 14-optimization-module-demo.py           # OOP demo
+├── docs/                                        # Documentation
+├── tests/                                       # Unit tests
+└── data/                                        # Sample data files
 ```
 
+│
 ## Installation
 
 ```bash
