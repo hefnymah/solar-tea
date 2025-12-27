@@ -119,7 +119,7 @@ class LocationConfig:
     """
     latitude: float
     longitude: float
-    altitude: float = 400
+    altitude: Optional[float] = None
     timezone: str = 'Europe/Zurich'
     
     def __post_init__(self):
@@ -261,6 +261,7 @@ class SizingResult:
     monthly_profile: pd.DataFrame
     hourly_data: pd.DataFrame
     constrained_by_roof: bool = False
+    
     # Battery-specific metrics (optional)
     battery_enabled: bool = False
     battery_capacity_kwh: Optional[float] = None
@@ -268,6 +269,9 @@ class SizingResult:
     battery_charge_kwh: Optional[float] = None
     battery_discharge_kwh: Optional[float] = None
     battery_cycles: Optional[float] = None
+    
+    # Detected metadata
+    altitude: float = 0.0 # Detected altitude from simulation
     
     def __str__(self) -> str:
         return (
@@ -280,7 +284,7 @@ class SizingResult:
             f"  Grid Import: {self.annual_grid_import_kwh:.0f} kWh\n"
             f"  Grid Export: {self.annual_grid_export_kwh:.0f} kWh\n"
             f"  Specific Yield: {self.specific_yield_kwh_per_kwp:.0f} kWh/kWp/year\n"
-            + (f"  ⚠️  Limited by roof area\n" if self.constrained_by_roof else "")
+            + (f"Limited by roof area\n" if self.constrained_by_roof else "")
         )
     
     def plot_monthly_comparison(
@@ -382,7 +386,15 @@ class SimulationAccessor:
         self._weather_data: Optional[pd.DataFrame] = None
         self._reference_generation_kwh: Optional[pd.Series] = None
         self._specific_yield: Optional[float] = None
-    
+        self._determined_altitude: Optional[float] = None
+
+    @property
+    def altitude(self) -> float:
+        """Returns the altitude used in simulation (auto-detected or configured)."""
+        if self._determined_altitude is not None:
+            return self._determined_altitude
+        return self._location.altitude if self._location.altitude is not None else 0.0
+
     def _run_simulation(self) -> None:
         """Runs pvlib simulation for reference 1kWp system."""
         if self._simulated:
@@ -392,14 +404,43 @@ class SimulationAccessor:
         
         # 1. Fetch weather data from PVGIS (Generic TMY)
         try:
-            weather, meta = pvlib.iotools.get_pvgis_tmy(
+            # pvlib.iotools.get_pvgis_tmy return tuple is variable (2-4 items)
+            result = pvlib.iotools.get_pvgis_tmy(
                 self._location.latitude,
                 self._location.longitude,
                 map_variables=True
             )
         except Exception as e:
             raise RuntimeError(f"Failed to fetch PVGIS weather data: {e}")
+            
+        # Parse return value robustly
+        weather = None
+        meta = {}
         
+        if isinstance(result, tuple):
+            weather = result[0] # DataFrame is always first
+            # Search for metadata dict with 'elevation'
+            for item in result:
+                if isinstance(item, dict):
+                    # Recursive search 'elevation'
+                    def find_elev(d):
+                        if 'elevation' in d: return d['elevation']
+                        for v in d.values():
+                            if isinstance(v, dict):
+                                res = find_elev(v)
+                                if res: return res
+                        return None
+                    
+                    if find_elev(item) is not None:
+                        meta = item
+                        break
+        else:
+            # Fallback if just DF returned (unlikely)
+            weather = result
+            
+        if weather is None:
+             raise RuntimeError("Received empty weather data from PVGIS")
+
         # 2. Align simulation to Consumption Data Index (Target Index)
         target_index = self._consumption_data.series.index
         print(f"DEBUG: Target index range: {target_index.min()} to {target_index.max()}")
@@ -439,11 +480,36 @@ class SimulationAccessor:
         aligned_weather = aligned_weather.bfill().ffill()
         
         # 4. Setup Simulation
+        # Determine Altitude: Use configured if available, else use fetched
+        used_altitude = self._location.altitude
+        
+        if used_altitude is None:
+            # Extract from meta
+            # Helper to find key recursively
+            def find_key(data, target_key):
+                if isinstance(data, dict):
+                    if target_key in data:
+                        return data[target_key]
+                    for key, value in data.items():
+                        found = find_key(value, target_key)
+                        if found is not None:
+                            return found
+                return None
+
+            fetched_elev = find_key(meta, 'elevation')
+            used_altitude = float(fetched_elev) if fetched_elev is not None else 0.0
+            print(f"DEBUG: Auto-detected altitude: {used_altitude} m")
+            
+            # Store it for retrieval property
+            self._specific_yield = None # Reset results if we run again? (Not really needed)
+        
+        self._determined_altitude = used_altitude
+            
         location = Location(
             self._location.latitude,
             self._location.longitude,
             self._location.timezone,
-            self._location.altitude
+            used_altitude
         )
         temp_params = TEMPERATURE_MODEL_PARAMETERS['sapm']['open_rack_glass_glass']
         
@@ -1300,7 +1366,8 @@ class PVSystemSizer:
             battery_soc_profile=battery_soc_profile,
             battery_charge_kwh=round(battery_charge_kwh, 1) if battery_enabled else None,
             battery_discharge_kwh=round(battery_discharge_kwh, 1) if battery_enabled else None,
-            battery_cycles=round(battery_cycles, 1) if battery_enabled else None
+            battery_cycles=round(battery_cycles, 1) if battery_enabled else None,
+            altitude=self.simulation.altitude
         )
     
     def __repr__(self) -> str:

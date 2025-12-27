@@ -13,7 +13,12 @@ import pandas as pd
 import numpy as np
 
 from eclipse.battery.simple import SimpleBatterySimulator
-from eclipse.battery.pysam import PySAMBatterySimulator
+from eclipse.battery.simple import SimpleBatterySimulator
+try:
+    from eclipse.battery.pysam import PySAMBatterySimulator
+except ImportError:
+    PySAMBatterySimulator = None
+
 from eclipse.config.equipment_models import MockBattery
 from eclipse.config.equipments import batteries
 
@@ -128,6 +133,8 @@ class BatterySizer:
         
         # Run simulation with selected backend
         if self.simulator_type == 'pysam':
+            if PySAMBatterySimulator is None:
+                raise ImportError("PySAM not found. Cannot use 'pysam' simulator.")
             battery_model = batteries.default()
             sim = PySAMBatterySimulator(battery_model)
             # Auto-scale power limit based on capacity (0.5C rate = charge/discharge in 2 hours)
