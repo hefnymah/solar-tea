@@ -278,13 +278,14 @@ if result.battery_capacity_kwh and result.battery_capacity_kwh > 0:
     )
     
     # Get hourly data for battery simulation
+    # Get high-res data for battery simulation
     pv_kwp = result.recommended_kwp
-    hourly_pv = sizer.simulation.scale_to_capacity(pv_kwp)
-    hourly_load = data.hourly.series
+    pv_data = sizer.simulation.scale_to_capacity(pv_kwp)
+    load_data = data.series.series
     
     sim = SimpleBatterySimulator(mock_battery)
-    battery_results = sim.simulate(hourly_load, hourly_pv, system_kwh=result.battery_capacity_kwh)
-    battery_results.index = hourly_load.index
+    battery_results = sim.simulate(load_data, pv_data, system_kwh=result.battery_capacity_kwh)
+    battery_results.index = load_data.index
     
     # Create battery plotter
     plotter = BatteryPlotter()

@@ -29,7 +29,7 @@ from eclipse.plotting import PVSystemBehaviorPlotter
 # Handle both script and interactive execution
 
 input_dir  = project_root / "data" / "consumption"
-output_dir = project_root / "examples" / "outputs" / "example-03a"
+output_dir = project_root / "examples" / "outputs" / "example-03a-v2"
 os.makedirs(output_dir, exist_ok=True)
 
 #%%
@@ -38,7 +38,9 @@ print("PV SYSTEM ANALYSIS - CLEAN OOP ARCHITECTURE")
 print("=" * 70)
 
 # 1. Load consumption data (Data Layer)
-DATA_FILE = input_dir / "20251212_consumption-frq-60min-leap-yr.csv"
+#DATA_FILE = input_dir / "20251212_consumption-frq-60min-leap-yr.csv"
+DATA_FILE = input_dir / "20251212_consumption-frq-15min-leap-yr.csv"
+
 data = ConsumptionData.load(str(DATA_FILE))
 print(f"\n>>> Loaded: {data}")
 

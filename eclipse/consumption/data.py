@@ -294,23 +294,24 @@ class ConsumptionData:
     TIME_COL_CANDIDATES = ['zeit', 'timestamp', 'date', 'time']
     CONS_COL_CANDIDATES = ['stromverbrauch_kwh', 'verbrauch_kwh', 'consumption', 'consumption_kwh', 'wert']
     
-    def __init__(self, hourly_df: pd.DataFrame, metadata: Optional[Dict[str, Any]] = None):
+    def __init__(self, data_df: pd.DataFrame, metadata: Optional[Dict[str, Any]] = None):
         """
-        Initialize ConsumptionData from an hourly DataFrame.
+        Initialize ConsumptionData from a DataFrame (native resolution).
         
         Args:
-            hourly_df: DataFrame with DatetimeIndex and VALUE_COL column.
+            data_df: DataFrame with DatetimeIndex and VALUE_COL column.
             metadata: Optional metadata dictionary.
         """
-        if not isinstance(hourly_df.index, pd.DatetimeIndex):
-            raise TypeError("hourly_df must have a DatetimeIndex")
-        if self.VALUE_COL not in hourly_df.columns:
+        if not isinstance(data_df.index, pd.DatetimeIndex):
+            raise TypeError("data_df must have a DatetimeIndex")
+        if self.VALUE_COL not in data_df.columns:
             raise ValueError(f"DataFrame must contain '{self.VALUE_COL}' column")
         
-        self._hourly = hourly_df
+        self._data = data_df
         self._metadata = metadata or {}
         
         # Lazy initialization
+        self._hourly: Optional[pd.DataFrame] = None
         self._daily: Optional[pd.DataFrame] = None
         self._weekly: Optional[pd.DataFrame] = None
         self._monthly: Optional[pd.DataFrame] = None
@@ -335,7 +336,11 @@ class ConsumptionData:
             raise FileNotFoundError(f"File not found: {file_path}")
         
         # Load CSV
-        df = pd.read_csv(file_path, sep=None, engine='python')
+        try:
+            df = pd.read_csv(file_path, sep=None, engine='python')
+        except Exception as e:
+            raise ValueError(f"Could not read CSV file provided: {e}")
+            
         df.columns = [c.strip().lower() for c in df.columns]
         
         # Identify time column
@@ -343,6 +348,7 @@ class ConsumptionData:
         
         # Identify consumption column
         cons_col = next((c for c in df.columns if c in cls.CONS_COL_CANDIDATES), None)
+        # Fallback heuristic: 2nd column if not named explicitly
         if cons_col is None and len(df.columns) > 1:
             cons_col = df.columns[1]
         if cons_col is None:
@@ -356,20 +362,40 @@ class ConsumptionData:
         
         df.set_index(time_col, inplace=True)
         
-        # Resample to hourly
-        df_hourly = df[[cons_col]].resample('h').sum()
-        df_hourly.rename(columns={cons_col: cls.VALUE_COL}, inplace=True)
+        # Determine Native Resolution
+        # Calculate median time difference to infer frequency
+        if len(df) > 1:
+            median_diff = df.index.to_series().diff().median()
+            
+            # Decide on resampling rule based on median diff
+            # If < 55 mins, treat as sub-hourly (e.g. 15min)
+            # If ~60 mins, treat as hourly
+            if median_diff < pd.Timedelta(minutes=55):
+                # Infer 15min, 10min, etc.
+                # Use inferred frequency if possible, else 15min default for common data
+                inferred_freq = pd.infer_freq(df.index)
+                resample_rule = inferred_freq if inferred_freq else '15min'
+            else:
+                resample_rule = 'h'
+        else:
+            resample_rule = 'h'
+            
+        # Resample to ensure regularity (summing energy is correct for aggregating)
+        # Note: If data is already regular, this just fills gaps or re-indexes
+        df_native = df[[cons_col]].resample(resample_rule).sum()
+        df_native.rename(columns={cons_col: cls.VALUE_COL}, inplace=True)
         
         # Create metadata
         metadata = {
             'source_file': os.path.basename(file_path),
             'source_path': file_path,
             'rows_raw': len(df),
-            'rows_hourly': len(df_hourly),
-            'date_range': (df_hourly.index.min(), df_hourly.index.max()),
+            'rows_native': len(df_native),
+            'resolution': resample_rule,
+            'date_range': (df_native.index.min(), df_native.index.max()),
         }
         
-        instance = cls(df_hourly, metadata)
+        instance = cls(df_native, metadata)
         instance.validate()
         
         return instance
@@ -394,17 +420,31 @@ class ConsumptionData:
         Raises:
             ValueError: If data fails validation.
         """
-        n = len(self._hourly)
-        if n not in (8760, 8784):
-            # Warning only, don't raise
-            print(f"Warning: Expected full-year hourly data (8760/8784 rows), got {n}")
+        # Should cover at least a year roughly?
+        hours_approx = len(self._data) * (pd.Series(self._data.index).diff().median().total_seconds() / 3600)
+        # Check for non-empty
+        if len(self._data) == 0:
+            raise ValueError("Consumption data is empty")
         
-        if (self._hourly[self.VALUE_COL] < 0).any():
+        if (self._data[self.VALUE_COL] < 0).any():
             raise ValueError("Consumption data contains negative values")
     
     @property
+    def series(self) -> TimeSeriesAccessor:
+        """Native resolution consumption data."""
+        return TimeSeriesAccessor(self._data, self.VALUE_COL)
+
+    @property
     def hourly(self) -> TimeSeriesAccessor:
-        """Hourly consumption data."""
+        """Hourly consumption data (resampled if necessary)."""
+        if self._hourly is None:
+            # Check if native is already hourly
+            median_diff = self._data.index.to_series().diff().median()
+            if abs(median_diff - pd.Timedelta(hours=1)) < pd.Timedelta(minutes=5):
+                self._hourly = self._data
+            else:
+                # Resample sum (kWh aggregates correctly)
+                self._hourly = self._data[[self.VALUE_COL]].resample('h').sum()
         return TimeSeriesAccessor(self._hourly, self.VALUE_COL)
     
     @property

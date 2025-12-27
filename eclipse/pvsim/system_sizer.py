@@ -388,7 +388,7 @@ class SimulationAccessor:
         
         print("Running PV generation simulation with PVGIS data...")
         
-        # Fetch weather data from PVGIS
+        # 1. Fetch weather data from PVGIS (Generic TMY)
         try:
             weather, meta = pvlib.iotools.get_pvgis_tmy(
                 self._location.latitude,
@@ -398,11 +398,45 @@ class SimulationAccessor:
         except Exception as e:
             raise RuntimeError(f"Failed to fetch PVGIS weather data: {e}")
         
-        # Align weather year with consumption year
-        consumption_year = int(pd.Series(self._consumption_data.hourly.index.year).mode()[0])
-        weather.index = weather.index.map(lambda t: t.replace(year=consumption_year))
+        # 2. Align simulation to Consumption Data Index (Target Index)
+        target_index = self._consumption_data.series.index
+        print(f"DEBUG: Target index range: {target_index.min()} to {target_index.max()}")
+        print(f"DEBUG: Target index tz: {target_index.tz}")
         
-        # Setup location and temperature model
+        # Shift TMY generic year to match target year(s)
+        # We assume target index spans mainly one year (or we take the mode)
+        target_year = int(pd.Series(target_index.year).mode()[0])
+        print(f"DEBUG: Shifting TMY to year {target_year}")
+        
+        weather.index = weather.index.map(lambda t: t.replace(year=target_year))
+        print(f"DEBUG: Weather index tz: {weather.index.tz}")
+        
+        # TIMEZONE NORMALIZATION: 
+        # If target is naive and weather is aware, drop tz from weather (assuming aligned)
+        # Or if target is aware, convert weather.
+        if target_index.tz is None and weather.index.tz is not None:
+             print("DEBUG: Dropping timezone from TMY to match naive target")
+             weather.index = weather.index.tz_localize(None)
+        elif target_index.tz is not None and weather.index.tz is None:
+             print(f"DEBUG: Localizing TMY to {target_index.tz} to match target")
+             weather.index = weather.index.tz_localize('UTC').tz_convert(target_index.tz)
+             
+        # 3. Resample/Interpolate Weather to match Target Index Resolution (e.g. 15-min)
+        # This handles:
+        #   - Resolution mismatch (Hourly -> 15min)
+        #   - Leap Years (Interpolates Feb 29 if missing in TMY)
+        #   - Timezones (Assuming target is localized, we match it)
+        
+        # Reindex checks for timestamps. Method='time' interpolates based on time distance.
+        aligned_weather = weather.reindex(target_index).interpolate(method='time')
+        print(f"DEBUG: Aligned weather shape: {aligned_weather.shape}")
+        print(f"DEBUG: Aligned weather NaNs: {aligned_weather.isna().sum().sum()}")
+        print(aligned_weather.head())
+        
+        # Fill any remaining NaNs (e.g. if TMY starts slightly later or ends earlier)
+        aligned_weather = aligned_weather.bfill().ffill()
+        
+        # 4. Setup Simulation
         location = Location(
             self._location.latitude,
             self._location.longitude,
@@ -420,27 +454,36 @@ class SimulationAccessor:
             temperature_model_parameters=temp_params
         )
         
-        # Run model chain
+        # 5. Run Model on ALIGNED weather
         mc = ModelChain(system, location, aoi_model='physical', spectral_model='no_loss')
-        mc.run_model(weather)
+        mc.run_model(aligned_weather)
         
-        # Extract AC generation with performance ratio
-        ref_ac_kwh = (mc.results.ac / 1000.0) * self._roof.performance_ratio
+        # 6. Extract AC Generation
+        # Result index matches target_index exactly
+        ref_ac_power_watts = mc.results.ac.fillna(0)
         
-        # Calculate specific yield
-        specific_yield = ref_ac_kwh.sum()
+        # Convert Power (Watts) to Energy (kWh) per step
+        # Ideally, we integrate power over time step.
+        # Calculate step size in hours
+        step_hours = pd.Series(target_index).diff().median().total_seconds() / 3600
+        if pd.isna(step_hours) or step_hours == 0:
+             step_hours = 1.0 # Default fallback
+             
+        ref_ac_kwh = (ref_ac_power_watts * step_hours) / 1000.0 * self._roof.performance_ratio
         
-        # Remove timezone for alignment with consumption data
-        if ref_ac_kwh.index.tz is not None:
-            ref_ac_kwh.index = ref_ac_kwh.index.tz_localize(None)
+        # 7. Calculate Specific Yield (Annualized)
+        total_gen = ref_ac_kwh.sum()
+        # Scale to 365 days if target is substantially different? 
+        # For now, assumes target index is ~1 year.
+        specific_yield = total_gen
         
         # Cache results
-        self._weather_data = weather
+        self._weather_data = aligned_weather
         self._reference_generation_kwh = ref_ac_kwh
         self._specific_yield = specific_yield
         self._simulated = True
         
-        print(f"Simulation complete. Specific yield: {specific_yield:.0f} kWh/kWp/year")
+        print(f"Simulation complete. Specific yield: {specific_yield:.0f} kWh/kWp/year (Resolution: {step_hours*60:.0f} min)")
     
     @property
     def specific_yield(self) -> float:
@@ -468,8 +511,8 @@ class SimulationAccessor:
         scaled = self._reference_generation_kwh * kwp
         scaled.name = 'PV_Generation_kWh'
         
-        # Align to consumption data index
-        return scaled.reindex(self._consumption_data.hourly.index, fill_value=0)
+        # Result is already aligned to consumption index by _run_simulation
+        return scaled
 
 
 class PVSystemSizer:
@@ -1141,19 +1184,19 @@ class PVSystemSizer:
     def _calculate_result(self, kwp: float, constrained: bool) -> SizingResult:
         """
         Calculates comprehensive sizing result for given capacity.
-        
-        Includes optional battery simulation if battery_config is provided.
-        
-        Args:
-            kwp: System capacity in kWp.
-            constrained: Whether sizing was limited by roof area.
-            
-        Returns:
-            SizingResult with all metrics calculated.
+        Internal method to calculate results for specific system size.
         """
-        # Get scaled generation
+        # Get aligned PV generation (now strictly aligned matches consumption index)
         pv_generation = self.simulation.scale_to_capacity(kwp)
-        consumption = self._consumption_data.hourly.series
+        
+        # Get native consumption data (matching alignment)
+        consumption = self._consumption_data.series.series
+        
+        # Verify alignment
+        if len(pv_generation) != len(consumption):
+             print(f"WARNING: Size mismatch in _calculate_result! PV={len(pv_generation)}, Load={len(consumption)}")
+             # Final safety alignment
+             pv_generation = pv_generation.reindex(consumption.index).fillna(0)
         
         # Initialize battery metrics
         battery_enabled = self._battery_config is not None
