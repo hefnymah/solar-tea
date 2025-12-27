@@ -43,7 +43,6 @@ BATTERY_CAPACITY_KWH = 13.5
 PV_SIZE_KWP = 6.0
 # Increase load to match the "Industrial/Daytime" scale relative to PV
 DAILY_LOAD_KWH = 30.0
-battery = batteries.default()
 
 #%%
 # ==========================================
@@ -70,13 +69,16 @@ times = load_kw.index
 # ==========================================
 
 print("Simulating battery...")
+from eclipse.config.equipments import batteries
+from eclipse.battery import SimpleBatterySimulator, PySAMBatterySimulator
+
+battery = batteries.default()
+#simulator = SimpleBatterySimulator(battery)
 simulator = PySAMBatterySimulator(battery)
-results = simulator.simulate(
-    load_kw, pv_kw, 
-    system_kwh=BATTERY_CAPACITY_KWH,
-    max_soc=90.0,
-    min_soc=10.0
-)
+results = simulator.simulate(load_kw, pv_kw, 
+system_kwh=BATTERY_CAPACITY_KWH,
+max_soc=90,
+min_soc=20)
 results.index = load_kw.index
 #%%
 # ==========================================

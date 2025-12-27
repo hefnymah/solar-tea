@@ -87,7 +87,7 @@ sizer = BatterySizer(
     daily_load_kwh=DAILY_LOAD_KWH,
     max_soc=TARGET_SOC_MAX,
     min_soc=MIN_SOC,
-    simulator='pysam' # or 'simple'
+    simulator='pysam'  # Use simple simulator for reliability (pysam or simple)
 )
 
 sizing_result = sizer.recommend(load_kw, pv_kw, target='optimal')
@@ -101,23 +101,13 @@ recommended_capacity = sizing_result.recommended_kwh
 # ==========================================
 print(f"\n>>> Verifying with simulation (7 days in Summer)...")
 
-# Setup Simulation with Recommended Capacity
-battery_model = batteries.default()
-simulator = PySAMBatterySimulator(battery_model)
+from eclipse.config.equipments import batteries
+from eclipse.battery import SimpleBatterySimulator, PySAMBatterySimulator
 
-# Run simulation (Re-using the generated data)
-# We need to pass the capacity as 'system_kwh'.
-# Note: PySAMSimulator might expect the battery model to encompass capacity, 
-# but our `simulate` wrapper often allows overrides.
-# Let's check the signature or simulate method. 
-# Looking at eclipse/battery/pysam.py: simulate(load, pv, system_kwh=None, ...)
-results = simulator.simulate(
-    load_kw, 
-    pv_kw, 
-    system_kwh=recommended_capacity, 
-    max_soc=TARGET_SOC_MAX, 
-    min_soc=MIN_SOC
-)
+battery = batteries.default()
+simulator = SimpleBatterySimulator(battery)
+results = simulator.simulate(load_kw, pv_kw, system_kwh=recommended_capacity,
+max_soc=TARGET_SOC_MAX,min_soc=MIN_SOC)
 
 results.index = load_kw.index
 

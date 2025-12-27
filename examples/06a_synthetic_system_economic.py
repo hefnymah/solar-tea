@@ -31,7 +31,7 @@ from eclipse.config.equipments import batteries, modules
 from eclipse.battery import PySAMBatterySimulator
 from eclipse.synthetic import generate_scenario
 from eclipse.economics.subsidies.pronovo import calculate_subsidy
-from eclipse.economics.capex import CapexCalculator
+from eclipse.economics.capex import CapexCalculator, BatteryConfigurator
 from eclipse.economics.enums import SystemCategory
 
 #%%
@@ -92,8 +92,6 @@ LON = 9.8360
 ALTITUDE_M = get_altitude_from_pvgis(LAT, LON)
 TILT_DEG = 30.0
 
-battery = batteries.default()
-
 #%%
 # ==========================================
 # 2. Generate Data (The "Input")
@@ -120,13 +118,13 @@ times = load_kw.index
 # ==========================================
 
 print("Simulating battery...")
-simulator = PySAMBatterySimulator(battery)
-results = simulator.simulate(
-    load_kw, pv_kw, 
-    system_kwh=BATTERY_CAPACITY_KWH,
-    max_soc=90.0,
-    min_soc=10.0
-)
+from eclipse.config.equipments import batteries
+from eclipse.battery import SimpleBatterySimulator
+
+battery = batteries.default()
+simulator = SimpleBatterySimulator(battery)
+results = simulator.simulate(load_kw, pv_kw, system_kwh=BATTERY_CAPACITY_KWH, max_soc=90, 
+min_soc=20)
 results.index = load_kw.index
 
 # Calculate Annual Metrics
@@ -181,6 +179,15 @@ capex_result = capex_calc.calculate_module_cost(
     margin_pct=0.20 # 20% Margin
 )
 
+# ==========================================
+# 6. ECONOMICS (BATTERY CAPEX)
+# ==========================================
+battery_configurator = BatteryConfigurator()
+battery_capex = battery_configurator.calculate_capex(
+    target_kwh=BATTERY_CAPACITY_KWH,
+    margin_pct=0.20  # 20% Margin
+)
+
 #%%
 # ==========================================
 # 5. RESULTS
@@ -225,6 +232,22 @@ print(f"""
 {row("Quantity:", f"{capex_result.module_count}", "units")}
 {row("Base Cost:", f"{capex_result.module_cost_base:>,.2f}", capex_result.currency)}
 {row("Margin (20%):", f"{capex_result.module_margin_amount:>,.2f}", capex_result.currency)}
-{row("TOTAL MODULE RATE:", f"{capex_result.module_cost_total:>,.2f}", capex_result.currency)}
+{row("TOTAL MODULE COST:", f"{capex_result.module_cost_total:>,.2f}", capex_result.currency)}
+├─────────────────────────────────────────────────────────────────────┤
+│  CAPITAL EXPENDITURE (BATTERY)                                      │
+├─────────────────────────────────────────────────────────────────────┤
+{row("Battery Model:", f"{battery_capex.configuration.spec.brand} {battery_capex.configuration.spec.model}")}
+{row("Configuration:", f"{battery_capex.configuration.total_modules}× modules")}
+{row("Actual Capacity:", f"{battery_capex.configuration.total_capacity_kwh:.1f}", "kWh")}
+{row("Base Cost:", f"{battery_capex.base_cost_chf:>,.2f}", "CHF")}
+{row("Margin (20%):", f"{battery_capex.margin_amount_chf:>,.2f}", "CHF")}
+{row("TOTAL BATTERY COST:", f"{battery_capex.total_cost_chf:>,.2f}", "CHF")}
+├─────────────────────────────────────────────────────────────────────┤
+│  TOTAL SYSTEM COST                                                  │
+├─────────────────────────────────────────────────────────────────────┤
+{row("Modules:", f"{capex_result.module_cost_total:>,.2f}", capex_result.currency)}
+{row("Battery:", f"{battery_capex.total_cost_chf:>,.2f}", "CHF")}
+{row("Subsidy:", f"-{subsidy.total:>,.0f}", "CHF")}
+{row("NET COST:", f"{capex_result.module_cost_total + battery_capex.total_cost_chf - subsidy.total:>,.2f}", "CHF")}
 └─────────────────────────────────────────────────────────────────────┘
 """)

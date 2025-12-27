@@ -1,93 +1,264 @@
+"""
+Commercial Battery Equipment Catalog
+=====================================
+Database of modular battery systems with commercial specifications.
 
-from eclipse.config.equipment_models import MockBattery
+This module contains COMMERCIAL EQUIPMENT data (brand, model, pricing, stacking rules).
+For physics simulation parameters, see: eclipse/battery/defaults.py
+"""
 
-# ====================================
-# PySAM Test Battery
-# ====================================
-# ====================================
-# PySAM Test Battery
-# ====================================
-_PySAM_Test_Battery = MockBattery(
-    name="PySAM_Test_Battery",
-    # ... args ...
-    nominal_energy_kwh=10.0,
-    nominal_voltage_v=500,
-    max_charge_power_kw=5.0,
-    max_discharge_power_kw=5.0,
-    min_soc=20.0,
-    max_soc=95.0,
-    initial_soc=95.0,
-    chem=1,
-    v_nom_cell=3.6, v_max_cell=4.1, v_min_cell=3.0, q_full_cell=3.0, resistance=0.01,
-    v_exp=4.05, q_exp=0.05, q_nom=3.0, v_nom_curve=3.6, c_rate=1.0,
-    model_params={
-        "life_model": 0, "calendar_choice": 0,
-        "cycling_matrix": [[0, 0, 100], [50, 5000, 90], [100, 5000, 80]],
-        "mass": 500, "surface_area": 2.0, "Cp": 1000, "h": 20, "T_room_init": 20,
-        "cap_vs_temp": [[-10, 60], [0, 80], [25, 100], [40, 100]],
-        "loss_choice": 0, "monthly_charge_loss": [0]*12, "monthly_discharge_loss": [0]*12, "monthly_idle_loss": [0]*12
-    },
-    dimensions={"width": 1000, "height": 1000, "depth": 500, "weight": 500.0},
-    performance={"round_trip_efficiency": 0.95, "depth_of_discharge": 1.0, "chemistry": "Li-ion (NMC)"},
-    certifications={}, warranty={"standard_years": 10}, economics={"price_per_unit": 5000}
+from dataclasses import dataclass
+from typing import List, Optional, Tuple
+from enum import Enum
+
+
+class BatteryChemistry(Enum):
+    """Battery cell chemistry types."""
+    LFP = "LFP"    # Lithium Iron Phosphate (safe, long cycle life)
+    NMC = "NMC"    # Nickel Manganese Cobalt (higher energy density)
+    LTO = "LTO"    # Lithium Titanate (ultra-fast charging)
+
+
+@dataclass(frozen=True)
+class ModularBatterySpec:
+    """
+    Specification for a modular/stackable battery system.
+    
+    Represents ONE MODULE that can be stacked in towers (columns).
+    Multiple towers can be installed in parallel.
+    
+    Example:
+        Huawei LUNA2000: 5 kWh per module, max 6 modules/tower, max 2 towers
+        → Possible capacities: 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60 kWh
+    """
+    # Identity
+    brand: str                      # "Huawei", "BYD", "Sonnen", "Tesla"
+    model: str                      # "LUNA2000-5-S0", "HVS-5.1"
+    
+    # Per-Module Electrical Specs
+    capacity_kwh: float             # Energy per module (5.0, 5.1, 13.5)
+    power_kw: float                 # Continuous power per module
+    chemistry: BatteryChemistry     # LFP, NMC
+    round_trip_efficiency: float    # 0.95-0.97
+    
+    # Stacking Constraints
+    max_modules_per_tower: int      # Vertical stack limit (6, 5, 3)
+    max_towers: int                 # Parallel tower limit (2, 4, 16)
+    min_modules: int = 1            # Minimum modules required (some need 2+)
+    
+    # Physical
+    weight_kg: float = 0.0          # Per-module weight
+    dimensions_mm: Optional[Tuple[int, int, int]] = None  # (W, H, D)
+    
+    # Economics (Swiss Market 2025)
+    price_per_kwh_chf: float = 0.0  # CHF per kWh
+    warranty_years: int = 10        # Standard warranty period
+    
+    # ════════════════════════════════════════════════════════════════════════
+    # COMPUTED PROPERTIES
+    # ════════════════════════════════════════════════════════════════════════
+    
+    @property
+    def max_system_capacity_kwh(self) -> float:
+        """Maximum possible capacity with full stacking."""
+        return self.capacity_kwh * self.max_modules_per_tower * self.max_towers
+    
+    @property
+    def price_per_module_chf(self) -> float:
+        """Cost of one module."""
+        return self.capacity_kwh * self.price_per_kwh_chf
+    
+    def available_capacities(self) -> List[float]:
+        """
+        List all possible discrete capacity configurations.
+        
+        Returns:
+            Sorted list of achievable capacities in kWh.
+        """
+        capacities = set()
+        for towers in range(1, self.max_towers + 1):
+            for modules in range(self.min_modules, self.max_modules_per_tower + 1):
+                cap = self.capacity_kwh * modules * towers
+                capacities.add(round(cap, 2))
+        return sorted(capacities)
+    
+    def __str__(self) -> str:
+        return f"{self.brand} {self.model} ({self.capacity_kwh} kWh/module)"
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# COMMERCIAL BATTERY CATALOG (2025 Swiss Market)
+# ════════════════════════════════════════════════════════════════════════════
+
+# --- HUAWEI ---
+_Huawei_LUNA2000 = ModularBatterySpec(
+    brand="Huawei",
+    model="LUNA2000-5-S0",
+    capacity_kwh=5.0,
+    power_kw=2.5,
+    chemistry=BatteryChemistry.LFP,
+    round_trip_efficiency=0.96,
+    max_modules_per_tower=6,
+    max_towers=2,
+    min_modules=1,
+    weight_kg=62.0,
+    dimensions_mm=(670, 600, 150),
+    price_per_kwh_chf=650,
+    warranty_years=10
 )
 
-# ====================================
-# Tesla Powerwall 2
-# ====================================
-_Tesla_Powerwall_2 = MockBattery(
-    name="Tesla_Powerwall_2",
-    nominal_energy_kwh=13.5,
-    nominal_voltage_v=50, 
-    max_charge_power_kw=5.0,
-    max_discharge_power_kw=5.0,
-    min_soc=10.0,
-    max_soc=100.0,
-    v_exp=4.05, q_exp=0.05, q_nom=3.0, v_nom_curve=3.6, c_rate=1.0,
-    dimensions={"width": 753, "height": 1150, "depth": 147, "weight": 114.0},
-    performance={"round_trip_efficiency": 0.90, "depth_of_discharge": 1.0, "warranty_cycles": 0},
-    certifications={"safety": "UL 1642, UL 1741, IEC 62619", "grid": "IEEE 1547, VDE-AR-N 4105"},
-    warranty={"standard_years": 10, "retention": 0.70},
-    economics={"price_per_unit": 9500.00, "currency": "EUR", "price_per_kwh": 703.70}
+# --- BYD ---
+_BYD_HVS = ModularBatterySpec(
+    brand="BYD",
+    model="HVS-5.1",
+    capacity_kwh=5.1,
+    power_kw=2.5,
+    chemistry=BatteryChemistry.LFP,
+    round_trip_efficiency=0.95,
+    max_modules_per_tower=5,
+    max_towers=4,
+    min_modules=2,  # BYD HVS requires minimum 2 modules
+    weight_kg=45.0,
+    dimensions_mm=(585, 520, 295),
+    price_per_kwh_chf=600,
+    warranty_years=10
+)
+
+_BYD_HVM = ModularBatterySpec(
+    brand="BYD",
+    model="HVM-2.76",
+    capacity_kwh=2.76,
+    power_kw=1.3,
+    chemistry=BatteryChemistry.LFP,
+    round_trip_efficiency=0.95,
+    max_modules_per_tower=8,
+    max_towers=16,  # Commercial-scale: up to 16 towers
+    min_modules=3,  # BYD HVM requires minimum 3 modules
+    weight_kg=26.0,
+    dimensions_mm=(585, 130, 415),
+    price_per_kwh_chf=550,  # Volume discount for large systems
+    warranty_years=10
+)
+
+# --- SONNEN ---
+_Sonnen_Eco = ModularBatterySpec(
+    brand="Sonnen",
+    model="Eco-5",
+    capacity_kwh=5.0,
+    power_kw=2.25,
+    chemistry=BatteryChemistry.LFP,
+    round_trip_efficiency=0.94,
+    max_modules_per_tower=4,
+    max_towers=2,
+    min_modules=1,
+    weight_kg=55.0,
+    dimensions_mm=(690, 880, 220),
+    price_per_kwh_chf=900,  # Premium brand
+    warranty_years=10
+)
+
+# --- TESLA ---
+_Tesla_Powerwall3 = ModularBatterySpec(
+    brand="Tesla",
+    model="Powerwall3",
+    capacity_kwh=13.5,
+    power_kw=11.5,
+    chemistry=BatteryChemistry.NMC,
+    round_trip_efficiency=0.97,
+    max_modules_per_tower=3,
+    max_towers=2,
+    min_modules=1,
+    weight_kg=130.0,
+    dimensions_mm=(1098, 1380, 168),
+    price_per_kwh_chf=850,
+    warranty_years=10
 )
 
 
-BATTERY_DB = [
-    _PySAM_Test_Battery,
-    _Tesla_Powerwall_2,
+# ════════════════════════════════════════════════════════════════════════════
+# CATALOG & HELPER FUNCTIONS
+# ════════════════════════════════════════════════════════════════════════════
+
+BATTERY_CATALOG: List[ModularBatterySpec] = [
+    _Huawei_LUNA2000,
+    _BYD_HVS,
+    _BYD_HVM,
+    _Sonnen_Eco,
+    _Tesla_Powerwall3,
 ]
 
-DEFAULT_BATTERY = _PySAM_Test_Battery
+DEFAULT_COMMERCIAL_SPEC = _BYD_HVS
 
-# ==============================================================================
-# Helper Methods (Module-Level Access)
-# Usage:
-#   from eclipse.config.equipments import batteries
-#   bat = batteries.default()
-#   bat = batteries.Tesla_Powerwall_2()
-# ==============================================================================
 
-def get_all():
-    """Return list of all available batteries."""
-    return BATTERY_DB
+def get_all() -> List[ModularBatterySpec]:
+    """Return all available battery specs."""
+    return BATTERY_CATALOG
 
-def list_options():
-    """Print available battery models to console."""
-    print("Available Batteries:")
-    for b in BATTERY_DB:
-        print(f" - {b.name} ({b.nominal_energy_kwh} kWh)")
-        
-def get(name: str):
-    """Get a battery by name (case-insensitive)."""
-    for b in BATTERY_DB:
-        if b.name.lower() == name.lower():
+
+def get_by_brand(brand: str) -> List[ModularBatterySpec]:
+    """Filter batteries by brand name (case-insensitive)."""
+    return [b for b in BATTERY_CATALOG if b.brand.lower() == brand.lower()]
+
+
+def get(model_name: str) -> ModularBatterySpec:
+    """
+    Get battery by model name (case-insensitive).
+    
+    Raises:
+        ValueError: If model not found.
+    """
+    for b in BATTERY_CATALOG:
+        if b.model.lower() == model_name.lower():
             return b
-    raise ValueError(f"Battery '{name}' not found. options: {[b.name for b in BATTERY_DB]}")
+    available = [b.model for b in BATTERY_CATALOG]
+    raise ValueError(f"Battery '{model_name}' not found. Available: {available}")
+
+
+def default_spec() -> ModularBatterySpec:
+    """Return the default commercial battery spec (BYD HVS) for CAPEX calculations."""
+    return DEFAULT_COMMERCIAL_SPEC
+
 
 def default():
-    """Return the default battery."""
-    return DEFAULT_BATTERY
+    """
+    Return a simulation-ready MockBattery for PySAM/Simple simulators.
+    
+    Usage:
+        from eclipse.config.equipments import batteries
+        battery = batteries.default()
+        simulator = PySAMBatterySimulator(battery)
+        results = simulator.simulate(load, pv, system_kwh=13.5)
+    """
+    from eclipse.battery.defaults import DEFAULT_PYSAM_BATTERY
+    return DEFAULT_PYSAM_BATTERY
 
-# Factory functions exposing public API
-def PySAM_Test_Battery(): return _PySAM_Test_Battery
-def Tesla_Powerwall_2(): return _Tesla_Powerwall_2
+
+def list_options() -> None:
+    """Print available battery options to console."""
+    print("Available Modular Batteries:")
+    print("-" * 60)
+    for b in BATTERY_CATALOG:
+        max_cap = b.max_system_capacity_kwh
+        print(f"  {b.brand:10} {b.model:20} {b.capacity_kwh:5.1f} kWh/mod  "
+              f"(max {max_cap:.0f} kWh)")
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# FACTORY FUNCTIONS (For convenient imports)
+# ════════════════════════════════════════════════════════════════════════════
+
+def Huawei_LUNA2000() -> ModularBatterySpec:
+    return _Huawei_LUNA2000
+
+def BYD_HVS() -> ModularBatterySpec:
+    return _BYD_HVS
+
+def BYD_HVM() -> ModularBatterySpec:
+    return _BYD_HVM
+
+def Sonnen_Eco() -> ModularBatterySpec:
+    return _Sonnen_Eco
+
+def Tesla_Powerwall3() -> ModularBatterySpec:
+    return _Tesla_Powerwall3
+

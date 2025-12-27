@@ -44,8 +44,14 @@ class SimpleBatterySimulator(BatterySimulator):
         # Get efficiency from config or use default
         if efficiency is not None:
             self.efficiency = efficiency
-        elif battery.performance and 'round_trip_efficiency' in battery.performance:
-            self.efficiency = battery.performance['round_trip_efficiency']
+        elif battery.performance:
+            # Handle both dict and SimpleNamespace
+            if hasattr(battery.performance, 'round_trip_efficiency'):
+                self.efficiency = battery.performance.round_trip_efficiency
+            elif isinstance(battery.performance, dict) and 'round_trip_efficiency' in battery.performance:
+                self.efficiency = battery.performance['round_trip_efficiency']
+            else:
+                self.efficiency = 0.95  # Default 95%
         else:
             self.efficiency = 0.95  # Default 95%
     
@@ -54,7 +60,9 @@ class SimpleBatterySimulator(BatterySimulator):
         load_kw: pd.Series, 
         pv_kw: pd.Series,
         system_kwh: Optional[float] = None,
-        system_kw: Optional[float] = None
+        system_kw: Optional[float] = None,
+        min_soc: Optional[float] = None,
+        max_soc: Optional[float] = None
     ) -> pd.DataFrame:
         """
         Run simple battery simulation.
@@ -64,6 +72,8 @@ class SimpleBatterySimulator(BatterySimulator):
             pv_kw: PV generation profile in kW
             system_kwh: Override for capacity (default: battery.nominal_energy_kwh)
             system_kw: Override for power limit (default: battery.max_discharge_power_kw)
+            min_soc: Override for minimum SOC % (default: battery.min_soc)
+            max_soc: Override for maximum SOC % (default: battery.max_soc)
             
         Returns:
             DataFrame with simulation results
@@ -72,9 +82,11 @@ class SimpleBatterySimulator(BatterySimulator):
         capacity_kwh = system_kwh if system_kwh is not None else self.battery.nominal_energy_kwh
         max_power_kw = system_kw if system_kw is not None else self.battery.max_discharge_power_kw
         
-        # SOC limits (as fractions)
-        min_soc_frac = self.battery.min_soc / 100.0
-        max_soc_frac = self.battery.max_soc / 100.0
+        # SOC limits (as fractions) - allow overrides
+        min_soc_val = min_soc if min_soc is not None else self.battery.min_soc
+        max_soc_val = max_soc if max_soc is not None else self.battery.max_soc
+        min_soc_frac = min_soc_val / 100.0
+        max_soc_frac = max_soc_val / 100.0
         
         # Initial SOC (start full)
         initial_soc_kwh = capacity_kwh * max_soc_frac

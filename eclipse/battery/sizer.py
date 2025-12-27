@@ -135,8 +135,15 @@ class BatterySizer:
         if self.simulator_type == 'pysam':
             if PySAMBatterySimulator is None:
                 raise ImportError("PySAM not found. Cannot use 'pysam' simulator.")
-            battery_model = batteries.default()
-            sim = PySAMBatterySimulator(battery_model)
+            # Use helper from defaults module (clean, reusable)
+            from eclipse.battery.defaults import get_pysam_battery
+            mock_battery = get_pysam_battery(
+                capacity_kwh=capacity_kwh,
+                min_soc=self.min_soc,
+                max_soc=self.max_soc,
+                efficiency=self.efficiency
+            )
+            sim = PySAMBatterySimulator(mock_battery)
             # Auto-scale power limit based on capacity (0.5C rate = charge/discharge in 2 hours)
             # This ensures large batteries aren't bottlenecked by small power limits
             c_rate = 0.5  # Conservative C-rate
